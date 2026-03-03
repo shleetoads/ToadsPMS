@@ -17,9 +17,11 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Ship, Plus, Search, Edit, Settings, Wrench, Upload, Download } from "lucide-react"
+import { Ship, Plus, Search, Edit, Settings, Wrench, Upload, Download, Trash2, Loader } from "lucide-react"
 import * as XLSX from 'xlsx';
 import { Vessel } from '@/types/vessel/vessel'; // ✅ interface import
+import { json } from "stream/consumers"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ExcelData {
   [key: string]: any;
@@ -37,6 +39,9 @@ export default function ShipManagementPage() {
   const [selectedVessel, setSelectedVessel] = useState<any>(null);
   const [excelData, setExcelData] = useState<ExcelData[]>([]);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isUploadaResultDialogOpen, setIsUploadResultDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadaResult, setUploadResult] = useState(false);
 
   const fetchVessels = () => {
     fetch('/api/admin/ships/all')
@@ -140,7 +145,7 @@ export default function ShipManagementPage() {
         'modifyUser': userInfo.account_no,
         'excelData': excelData
       }
-
+      
       const res = await fetch(`/api/admin/ships/${vesselNo}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,21 +153,31 @@ export default function ShipManagementPage() {
       });
 
       const data = await res.json();
-
-      if (data.success) {
-        alert('데이터가 성공적으로 전송되었습니다.');
-        fetchVessels();
-      } else {
-        alert('데이터 전송에 실패하였습니다.\n업로드 파일 양식 확인 후 다시 진행하세요.');
-      }
       
-      setIsUploadDialogOpen(false);
+      setIsUploading(false);
+      setUploadResult(data.success);
+      if(data.success){
+        fetchVessels();
+      }
+
+      setIsUploadResultDialogOpen(true);
+
+      // if (data.success) {
+      //   alert('데이터가 성공적으로 전송되었습니다.');
+      //   fetchVessels();
+      // } else {
+      //   alert('데이터 전송에 실패하였습니다.\n업로드 파일 양식 확인 후 다시 진행하세요.');
+      // }
+      // setIsUploadDialogOpen(false);
+
     } catch (error) {
       alert(`네트워크 에러: ${error}`);
     }
   };
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsUploading(true)
+
     const file = event.target.files?.[0];
 
     if (file) {
@@ -201,7 +216,6 @@ export default function ShipManagementPage() {
         ];
         
         const jsonData: ExcelData[] = XLSX.utils.sheet_to_json(worksheet, {header: headerMapping, range: 1});
-        
         setExcelData(jsonData);
         
         // 서버로 데이터 전송
@@ -215,6 +229,25 @@ export default function ShipManagementPage() {
         event.target.value = '';
     }
   };
+
+  const handleDelete = async (item: any) => {
+    if (confirm("석박("+ item.vessel_no +")을 삭제하시겠습니까?")) {
+      const res = await fetch('/api/admin/ships/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("삭제가 완료되었습니다.");
+        fetchVessels();
+      } else {
+        alert(data.message);
+      }
+    }
+  }
 
   const handleEditDialogOpen = (item: any) => {
     setSelectedVessel(item);
@@ -430,6 +463,15 @@ export default function ShipManagementPage() {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDelete(item)} 
+                        style={{cursor: 'pointer'}} 
+                        title="선박 삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -561,7 +603,10 @@ export default function ShipManagementPage() {
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>엑셀 파일 업로드</DialogTitle>
+                <div className="flex items-center gap-3">
+                  {isUploading?(<Loader color="#808080"></Loader>) : (<Upload></Upload>)}
+                  <DialogTitle>엑셀 파일 업로드</DialogTitle>
+                </div>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="text-sm text-gray-600">
@@ -580,6 +625,42 @@ export default function ShipManagementPage() {
                 </Button>
               </DialogFooter>
             </DialogContent>
+              <Dialog open={isUploadaResultDialogOpen} onOpenChange={setIsUploadResultDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <DialogTitle>{uploadaResult?('성공'):('실패')}</DialogTitle>
+                  </div>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600">
+                    <p>{uploadaResult?('데이터가 성공적으로 전송되었습니다.'):('데이터 전송에 실패하였습니다.\n업로드 파일 양식 확인 후 다시 진행하세요.')}</p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setIsUploadResultDialogOpen(false);
+                    setIsUploadDialogOpen(false);
+                  }}>
+                    확인
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isUploading}>
+              <DialogContent
+                className="w-fit max-w-none p-6 [&>button]:hidden"
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+              >
+                <VisuallyHidden>
+                  <DialogTitle></DialogTitle>
+                </VisuallyHidden>
+                <div className="flex flex-col items-center gap-3">
+                  <img src="/Loading.gif" alt="loading" className="w-44" />
+                </div>
+              </DialogContent>
+            </Dialog>
           </Dialog>
         </main>
       </div>

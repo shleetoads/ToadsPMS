@@ -99,7 +99,8 @@ export async function POST(req: Request) {
                          , @registUser as regist_user
                          , @modifyUser as modify_user) as b
                 on (a.vessel_no = b.vessel_no 
-               and  a.equip_name = b.equip_name)
+               and  a.equip_name = b.equip_name
+               and a.machine_name = b.machine_name )
               when matched then
                    update
                       set a.category = lower(b.category)
@@ -154,7 +155,8 @@ export async function POST(req: Request) {
               `select equip_no
                  from [equipment] 
                 where vessel_no = @vesselNo
-                  and equip_name = @equipName;`
+                  and equip_name = @equipName
+                  and machine_name = @machine;`
 
             result = await request.query(queryString);
 
