@@ -3,6 +3,9 @@ import { query } from '@/db'; // 이전에 만든 query 함수
 import { MaintenanceExtension } from '@/types/extension/maintenance_extension';
 
 export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const paramVesselNo = searchParams.get('vesselNo');
+
   try {
     // DB에서 데쉬보드 정보 확인
     const items: MaintenanceExtension[] = await query(
@@ -46,12 +49,20 @@ export async function GET(req: Request) {
           and c.equip_no = d.equip_no
         inner join [vessel] as e
            on b.vessel_no = e.vessel_no
-        where e.use_yn = 'Y'
-        order by a.vessel_no, d.machine_name, a.equip_no, a.section_code, a.plan_code, a.extension_seq`
+        where a.vessel_no = @vesselNo
+          and e.use_yn = 'Y'
+        order by a.vessel_no, d.machine_name, a.equip_no, a.section_code, a.plan_code, a.extension_seq`,
+      [
+        { name: 'vesselNo', value: paramVesselNo }
+      ]    
     );
 
-    let vessels: MaintenanceExtension[] = [];
-    let vessel: MaintenanceExtension;
+      let vessel: MaintenanceExtension = {
+        id: '',
+        name: '',
+        vessel_no: '',
+        children: [] = []
+      };
     let machine: MaintenanceExtension;
     let equipment: MaintenanceExtension;
     let maintenanceExtension: MaintenanceExtension;
@@ -59,7 +70,7 @@ export async function GET(req: Request) {
     let vesselNo: string = '';
     let machineName: string = '';
     let equipNo: string = '';
-    
+
     items.map(item => {
       if (vesselNo !== item.vessel_no) {
         vessel = {
@@ -73,7 +84,6 @@ export async function GET(req: Request) {
           children: [] = []
         }
 
-        vessels.push(vessel);
         vesselNo = item.vessel_no;
         machineName = '';
         equipNo = '';
@@ -148,7 +158,7 @@ export async function GET(req: Request) {
     });
 
     // 성공 시 데쉬보드 정보 반환
-    return NextResponse.json(vessels);
+    return NextResponse.json(vessel.children);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

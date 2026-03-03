@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { requireAuth } from "@/lib/auth"
+import { use, useEffect, useState } from "react"
+import { vesselRequireAuth } from "@/lib/auth"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,7 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Search,
   ChevronDown,
@@ -35,51 +34,42 @@ import { Vessel } from '@/types/vessel/vessel'; // ✅ interface import
 import { Machine } from '@/types/vessel/machine';
 import { Equipment } from '@/types/vessel/equipment';
 import { MaintenanceExtension } from '@/types/extension/maintenance_extension'; // ✅ interface import
+import { fi } from "date-fns/locale"
 
 export default function MaintenanceWorkManagementPage() {  
+  const [vesselNo, setVesselNo] = useState<string>('')
   const [userInfo, setUserInfo] = useState<any>(null)
-  const [vessels, setVessels] = useState<Vessel[]>([])
   const [machines, setMachines] = useState<Machine[]>([])
   const [equipments, setEquipments] = useState<Equipment[]>([])
   const [equipmentFilteredData, setEquipmentFilteredData] = useState<Equipment[]>([])
   const [maintenanceData, setMaintenanceData] = useState<MaintenanceExtension[]>([])
-  const [filteredData, setFilteredData] = useState<MaintenanceExtension[]>(maintenanceData)
+  const [filteredData, setFilteredData] = useState<MaintenanceExtension[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [searchFilter, setSearchFilter] = useState('');
-  const [shipFilter, setShipFilter] = useState("ALL")
   const [machineFilter, setMachineFilter] = useState("ALL")
   const [equipmentFilter, setEquipmentFilter] = useState("ALL")
-  const [selectedExtension, setSelectedExtension] = useState<MaintenanceExtension>()
-  const [isApprovalReasonDialogOpen, setIsApprovalReasonDialogOpen] = useState(false)
   const [isDetailSelectedDialogOpen, setIsDetailSelectedDialogOpen] = useState(false)
   const [selectedExtensionItem, setSelectedExtensionItem] = useState<MaintenanceExtension>()
 
   const [selectedApprovals, setSelectedApprovals] = useState<string[]>([])
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
-  const fetchVessels = () => {
-    fetch(`/api/admin/maintenance/extension/ships`)
-      .then(res => res.json())
-      .then(data => setVessels(data))
-      .catch(err => console.error(err));
-  };
-
   const fetchMachines = (vesselNo: string) => {
-    fetch(`/api/admin/ships/${vesselNo}/maintenance/extension/machine?vesselNo=${vesselNo}`)
+    fetch(`/api/ship/maintenance/extension/machine?vesselNo=${vesselNo}`)
       .then(res => res.json())
       .then(data => setMachines(data))
       .catch(err => console.error(err));
   };
 
   const fetchEquipments = (vesselNo: string) => {
-    fetch(`/api/admin/ships/${vesselNo}/maintenance/extension/equipment?vesselNo=${vesselNo}`)
+    fetch(`/api/ship/maintenance/extension/equipment?vesselNo=${vesselNo}`)
       .then(res => res.json())
       .then(data => setEquipments(data))
       .catch(err => console.error(err));
   };
 
-  const fetchExtension = () => {
-    fetch(`/api/admin/maintenance/extension`)
+  const fetchExtension = (vesselNo: string) => {
+    fetch(`/api/ship/maintenance/extension?vesselNo=${vesselNo}`)
       .then(res => res.json())
       .then(data => setMaintenanceData(data))
       .catch(err => console.error(err));
@@ -110,37 +100,27 @@ export default function MaintenanceWorkManagementPage() {
 
   useEffect(() => {
     try {
-      const user = requireAuth();
+      const user = vesselRequireAuth();
       setUserInfo(user);
-
-      fetchVessels();
-      fetchExtension();
+      setVesselNo(user.ship_no);
+      fetchExtension(user.ship_no);
     } catch (error) {
       // Redirect handled by requireAuth
     }
   }, [])
-
-  useEffect(() => {
-    fetchMachines(shipFilter);
-    fetchEquipments(shipFilter);
-  }, [shipFilter])
+  
   
   useEffect(() => {
-    let equipmentFiltered = equipments
-
-    if (machineFilter !== "ALL") {
-      equipmentFiltered = equipmentFiltered.filter((item) => item.vessel_no === shipFilter && item.machine_name === machineFilter)
+    try {
+      fetchEquipments(vesselNo);
+      fetchMachines(vesselNo);
+    } catch (error) {
+      
     }
-
-    setEquipmentFilteredData(equipmentFiltered)
-  }, [equipments,  shipFilter, machineFilter])
-
+  }, [maintenanceData])
+  
   useEffect(() => {
     let filtered = maintenanceData
-
-    if (shipFilter !== "ALL") {
-      filtered = filtered.filter((item) => item.vessel_no === shipFilter)
-    }
 
     if (machineFilter !== "ALL") {
       filtered = filterByMachine(filtered, machineFilter)
@@ -155,7 +135,7 @@ export default function MaintenanceWorkManagementPage() {
     }
 
     setFilteredData(filtered)
-  }, [maintenanceData, searchTerm, shipFilter, machineFilter, equipmentFilter])
+  }, [maintenanceData, searchTerm, machineFilter, equipmentFilter])
 
   if (!userInfo) return null
   
@@ -266,30 +246,11 @@ export default function MaintenanceWorkManagementPage() {
         {item.approval_status}
       </td>,
       <td key="approval" className="py-3 text-center text-gray-500">
-        {item.approval_status === 'REQUEST' && (
-          <div>
-            <Button onClick={() => handleApprovalOrRejectClick(item, "APPROVAL")} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
-              승인
-            </Button>
-            <Button onClick={() => handleApprovalOrRejectClick(item, "REJECT")} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
-              반려
-            </Button>
-          </div>
-        )}
+        {getStatusBadge(item.approval_status)}
       </td>,
     )
 
     return cells
-  }
-
-  const handleTaskSelection = (taskId: string, task: any) => {
-    setSelectedApprovals((prev) => {
-      if (prev.includes(taskId)) {
-        return prev.filter((id) => id !== taskId)
-      } else {
-        return [...prev, taskId]
-      }
-    })
   }
 
   const handleExtentionSelection = (extension : MaintenanceExtension) =>{
@@ -424,38 +385,6 @@ export default function MaintenanceWorkManagementPage() {
     ))
   }
 
-  const handleApprovalOrRejectClick = (item: MaintenanceExtension, status: string) => {
-    const updatedData = {
-      ...item,
-      approver: userInfo.account_no,
-      approval_status: status,
-      regist_user: userInfo.account_no,
-      modify_user: userInfo.account_no,
-    };
-
-    setSelectedExtension(updatedData);
-    setIsApprovalReasonDialogOpen(true);
-  }
-
-  const handleApprovalExtension = async () => {
-    const res = await fetch('/api/admin/maintenance/extension/approval', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(selectedExtension),
-    });
-
-    if (res.ok) {
-      if (selectedExtension?.approval_status === 'APPROVAL')
-        alert(`연장 요청이 승인 되었습니다.`);
-      else
-        alert(`연장 요청이 반려 되었습니다.`);
-    }
-
-    fetchExtension();
-
-    setIsApprovalReasonDialogOpen(false);
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header userType={userInfo.user_auth} />
@@ -469,16 +398,7 @@ export default function MaintenanceWorkManagementPage() {
                 <p className="text-gray-600">전체 선박의 정비에 대한 연장 신청 현황을 조회하세요</p>
               </div>
               <div className="flex gap-2">
-                {/* {selectedApprovals.length > 0 && (
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600">{selectedApprovals.length}개 작업 선택됨</span>
-                    <Button onClick={handleBulkExtension} className="bg-blue-600 hover:bg-blue-700" style={{cursor: 'pointer'}}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      일괄 실행 등록
-                    </Button>
-                  </div>
-                )} */}
-                <Button variant="outline" onClick={() => (window.location.href = "/admin/calendar")} style={{cursor: 'pointer'}}>
+                <Button variant="outline" onClick={() => (window.location.href = "/ship/calendar")} style={{cursor: 'pointer'}}>
                   <Calendar className="w-4 h-4 mr-2" />
                   작업 캘린더
                 </Button>
@@ -493,17 +413,6 @@ export default function MaintenanceWorkManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row gap-4">
-                <Select value={shipFilter} onValueChange={setShipFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">전체 선박</SelectItem>
-                    {vessels.map((vessel) => (
-                      <SelectItem key={vessel.vessel_no} value={vessel.vessel_no}>{vessel.vessel_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Select value={machineFilter} onValueChange={setMachineFilter}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
@@ -521,7 +430,7 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">전체 장비</SelectItem>
-                    {equipmentFilteredData.map((equipment) => (
+                    {equipments.map((equipment) => (
                       <SelectItem key={equipment.equip_no} value={equipment.equip_no}>{equipment.equip_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -562,49 +471,6 @@ export default function MaintenanceWorkManagementPage() {
               )}
             </CardContent>
           </Card>
-
-          {/* Detailed History Dialog */}
-          <Dialog open={isApprovalReasonDialogOpen} onOpenChange={setIsApprovalReasonDialogOpen}>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  정비 연장 신청 승인 및 반려 사유
-                </DialogTitle>
-                <DialogDescription>선택한 정비 연장 신청의 승인 및 반려 사유를 입력하세요</DialogDescription>
-              </DialogHeader>
-              {selectedExtension && (
-                <div className="space-y-6">
-                  {/* 기본 정보 */}
-                  <div className="grid grid-cols-1 gap-1">
-                    <div className="space-y-2">
-                      <Textarea 
-                        id="approval_reason" 
-                        placeholder="승인 및 반려 사유를 입력하세요" 
-                        value={selectedExtension.approval_reason}
-                        onChange={(e) => setSelectedExtension((prev: any) => ({ ...prev, approval_reason: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsApprovalReasonDialogOpen(false)} style={{cursor: 'pointer'}}>
-                  취소
-                </Button>
-                <Button 
-                  onClick={handleApprovalExtension}
-                  disabled={!selectedExtension?.vessel_no || 
-                    !selectedExtension?.equip_no || 
-                    !selectedExtension?.section_code || 
-                    !selectedExtension?.plan_code ||
-                    !selectedExtension?.extension_seq ||
-                    !selectedExtension?.approval_reason}
-                  style={{cursor: 'pointer'}}
-                >확인</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
           
           {/* Detailed Select Dialog */}
           <Dialog open={isDetailSelectedDialogOpen} onOpenChange={setIsDetailSelectedDialogOpen}>

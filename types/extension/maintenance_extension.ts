@@ -19,6 +19,7 @@ export interface MaintenanceExtension {
     applicant?: string;
     applicant_name?: string;
     approval_status?: string;
+    approval_date?: string;
     approver?: string;
     approver_name?: string;
     approval_reason?: string;

@@ -38,6 +38,7 @@ export function Sidebar({ userType }: SidebarProps) {
     { href: "/ship/equipment", label: "장비 관리", icon: Settings },
     { href: "/ship/maintenance", label: "정비 등록", icon: ClipboardList },
     { href: "/ship/execution", label: "정비 실행", icon: CheckSquare },
+    { href: "/ship/maintenance/extension", label: "정비 연장 신청 현황", icon: List },
     { href: "/ship/maintenance/performance", label: "정비 실적 현황", icon: History },
     { href: "/ship/calendar", label: "작업 캘린더", icon: Calendar },
     { href: "/ship/inventory", label: "재고 관리", icon: Package },
