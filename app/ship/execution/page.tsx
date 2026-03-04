@@ -326,16 +326,17 @@ export default function MaintenanceExecutionPage() {
       })
       .filter(Boolean) as Maintenance[]
   }
-  
+ 
   const filterByStatus = (items: Maintenance[], status: string): Maintenance[] => {
   return items
     .map((item) => {
+      const matchesScheduled = item.type === "TASK" && status === "SCHEDULED" && ["NORMAL", "WEEKLY", "MONTHLY"].includes(item.status)
       const matchesStatus = item.type === "TASK" && item.status === status
       const filteredChildren = item.children
         ? filterByStatus(item.children, status)
         : []
 
-      if (matchesStatus || filteredChildren.length > 0) {
+      if (matchesStatus || matchesScheduled || filteredChildren.length > 0) {
         return {
           ...item,
           children: filteredChildren,
@@ -927,7 +928,9 @@ export default function MaintenanceExecutionPage() {
 
           {/* 통계 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setStatusFilter("ALL")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">총 작업 수</CardTitle>
                 <Wrench className="h-4 w-4 text-blue-600" />
@@ -938,7 +941,9 @@ export default function MaintenanceExecutionPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setStatusFilter("DELAYED")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">지연된 작업</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -949,18 +954,22 @@ export default function MaintenanceExecutionPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setStatusFilter("SCHEDULED")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">예정된 작업</CardTitle>
                 <Calendar className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus("NORMAL") + getTasksByStatus("EXTENSION")}</div>
+                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus("NORMAL") +getTasksByStatus("WEEKLY") +getTasksByStatus("MONTHLY") + getTasksByStatus("EXTENSION")}</div>
                 <p className="text-xs text-muted-foreground">실행 대기</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setStatusFilter("COMPLETED")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
                 <CheckCircle className="h-4 w-4 text-green-600" />
@@ -1022,7 +1031,7 @@ export default function MaintenanceExecutionPage() {
                     <SelectItem value="ALL">전체 상태</SelectItem>
                     <SelectItem value="WEEKLY">금주 예정</SelectItem>
                     <SelectItem value="MONTHLY">금월 예정</SelectItem>
-                    <SelectItem value="NORMAL">예정</SelectItem>
+                    <SelectItem value="SCHEDULED">예정</SelectItem>
                     <SelectItem value="DELAYED">지연</SelectItem>
                     <SelectItem value="EXTENSION">연장</SelectItem>
                     <SelectItem value="COMPLATE">완료</SelectItem>
