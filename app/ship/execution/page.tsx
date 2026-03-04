@@ -24,8 +24,18 @@ import { Maintenance } from '@/types/dashboard/maintenance';
 import { MaintenanceExtension } from '@/types/vessel/maintenance_extension';
 
 export default function MaintenanceExecutionPage() {
+  
   const searchParams = useSearchParams()
   const equipNo = searchParams.get("equipNo") || ""
+
+  useEffect(() => {
+    const statusFromUrl = searchParams.get("status")
+    if(statusFromUrl === null)
+      setStatusFilter("ALL");
+    else
+      setStatusFilter(statusFromUrl)
+  }, [searchParams])
+
   const initialMaintenanceItem: Maintenance = {
     vessel_no: "",
     vessel_name: "",
@@ -81,11 +91,14 @@ export default function MaintenanceExecutionPage() {
 
   const [works, setWorks] = useState<Maintenance[]>([]);
   const [filteredWorks, setFilteredWorks] = useState(works)
+  
   const [searchTerm, setSearchTerm] = useState("")
   const [searchFilter, setSearchFilter] = useState('');
   const [machineFilter, setMachineFilter] = useState("ALL")
   const [equipmentFilter, setEquipmentFilter] = useState("ALL")
   const [sectionFilter, setSectionFilter] = useState("ALL")
+  const [statusFilter, setStatusFilter] = useState("ALL")
+
   const [selectedWork, setSelectedWork] = useState<any>(null)
   const [isExecutionDialogOpen, setIsExecutionDialogOpen] = useState(false)
   const [executionResult, setExecutionResult] = useState<Maintenance>(initialMaintenanceItem)
@@ -200,12 +213,16 @@ export default function MaintenanceExecutionPage() {
       filtered = filterBySection(filtered, sectionFilter)
     }
 
+    if (statusFilter !== "ALL") {
+      filtered = filterByStatus(filtered, statusFilter)
+    }
+
     if (searchTerm) {
       filtered = filterBySearch(filtered, searchTerm);
     }
 
     setFilteredWorks(filtered)
-  }, [works, searchTerm, machineFilter, equipmentFilter, sectionFilter])
+  }, [works, searchTerm, machineFilter, equipmentFilter, sectionFilter, statusFilter])
 
   useEffect(() => {    
     if (selectedUsedWork) {
@@ -309,7 +326,27 @@ export default function MaintenanceExecutionPage() {
       })
       .filter(Boolean) as Maintenance[]
   }
-    
+  
+  const filterByStatus = (items: Maintenance[], status: string): Maintenance[] => {
+  return items
+    .map((item) => {
+      const matchesStatus = item.type === "TASK" && item.status === status
+      const filteredChildren = item.children
+        ? filterByStatus(item.children, status)
+        : []
+
+      if (matchesStatus || filteredChildren.length > 0) {
+        return {
+          ...item,
+          children: filteredChildren,
+        }
+      }
+
+      return null
+    })
+    .filter(Boolean) as Maintenance[]
+  }
+
   const filterBySearch = (items: Maintenance[], term: string): Maintenance[] => {
     return items.map((item) => {
         const matchesSearch = item.plan_name?.toLowerCase().includes(term.toLowerCase())
@@ -334,6 +371,10 @@ export default function MaintenanceExecutionPage() {
         return <Badge variant="outline">연장</Badge>
       case "NORMAL":
         return <Badge variant="secondary">예정</Badge>
+      case "WEEKLY":
+        return <Badge variant="secondary">금주 예정</Badge>
+      case "MONTHLY":
+        return <Badge variant="secondary">금월 예정</Badge>
       case "COMPLATE":
         return <Badge variant="default">완료</Badge>
       default:
@@ -857,6 +898,17 @@ export default function MaintenanceExecutionPage() {
 
     setIsInventoryDialogOpen(false)
   }
+  
+  const handleMachineFilterChange = (value: string) => {
+    setMachineFilter(value)
+    setEquipmentFilter("ALL")
+    setSectionFilter("ALL")
+  }
+
+  const handleEquipmentFilterChange = (value: string) => {
+    setEquipmentFilter(value)
+    setSectionFilter("ALL")
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -929,7 +981,7 @@ export default function MaintenanceExecutionPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row gap-4">
-                <Select value={machineFilter} onValueChange={setMachineFilter}>
+                <Select value={machineFilter} onValueChange={handleMachineFilterChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -940,7 +992,7 @@ export default function MaintenanceExecutionPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
+                <Select value={equipmentFilter} onValueChange={handleEquipmentFilterChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -960,6 +1012,20 @@ export default function MaintenanceExecutionPage() {
                     {sectionFilteredData.map((section) => (
                       <SelectItem key={`${section.equip_no}-${section.section_code}`} value={`${section.equip_no}-${section.section_code}`}>{`(${section.equip_no}-${section.section_code}) ${section.section_name}`} </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">전체 상태</SelectItem>
+                    <SelectItem value="WEEKLY">금주 예정</SelectItem>
+                    <SelectItem value="MONTHLY">금월 예정</SelectItem>
+                    <SelectItem value="NORMAL">예정</SelectItem>
+                    <SelectItem value="DELAYED">지연</SelectItem>
+                    <SelectItem value="EXTENSION">연장</SelectItem>
+                    <SelectItem value="COMPLATE">완료</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex-1">

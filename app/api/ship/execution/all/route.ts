@@ -35,10 +35,36 @@ export async function GET(req: Request) {
             , convert(varchar(10), d.due_date, 121) as due_date 
             , convert(varchar(10), d.next_due_date, 121) as next_due_date 
             , convert(varchar(10), d.extension_date, 121) as extension_date 
-            , case when d.due_date < getdate() and d.lastest_date < getdate() and d.extension_date >= getdate() then 'EXTENSION'
-			             when d.due_date < getdate() then 'DELAYED' 
-                   when d.lastest_date >= dateadd(month, datediff(month, 0, getdate()), 0) and d.lastest_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 'COMPLATE'
-                   else 'NORMAL' end as status
+            , case 
+              -- 연장
+              when d.due_date < getdate() 
+                  and d.lastest_date < getdate() 
+                  and d.extension_date >= getdate()
+                then 'EXTENSION'
+
+              -- 지연
+              when d.due_date < getdate()
+                then 'DELAYED'
+
+              -- 완료 (이번 달 완료 기준 유지)
+              when d.lastest_date >= dateadd(month, datediff(month, 0, getdate()), 0) 
+                  and d.lastest_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0))
+                then 'COMPLATE'
+
+              -- 금주 예정
+              when d.due_date >= dateadd(week, datediff(week, 0, getdate()), 0)
+                  and d.due_date < dateadd(week, datediff(week, 0, getdate()) + 1, 0)
+                then 'WEEKLY'
+
+              -- 금월 예정 (금주 제외)
+              when d.due_date >= dateadd(month, datediff(month, 0, getdate()), 0)
+                  and d.due_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0))
+                then 'MONTHLY'
+
+              -- 그 외
+              else 'NORMAL'
+
+            end as status
             , datediff(day, getdate(), d.due_date) as days_until
             , datediff(day, getdate(), d.extension_date) as extension_days_until
          from [vessel] as a

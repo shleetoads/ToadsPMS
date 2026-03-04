@@ -69,9 +69,9 @@ export default function ShipUserDashboard() {
     }
   }
 
-  const handleTaskClick = (category: string) => {
-    const params = new URLSearchParams({ type: category })
-    window.location.href = `/ship/tasks?${params.toString()}`
+  const handleTaskClick = (status: string) => {
+    const params = new URLSearchParams({ status: status })
+    window.location.href = `/ship/execution?${params.toString()}`
   }
 
   const getDaysUntilColor = (days: number) => {
@@ -184,7 +184,7 @@ export default function ShipUserDashboard() {
 
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("weekly")}
+              onClick={() => handleTaskClick("WEEKLY")}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">금주 예정 작업</CardTitle>
@@ -198,7 +198,7 @@ export default function ShipUserDashboard() {
 
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("monthly")}
+              onClick={() => handleTaskClick("MONTHLY")}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">금월 예정 작업</CardTitle>
@@ -212,7 +212,7 @@ export default function ShipUserDashboard() {
 
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("completed")}
+              onClick={() => handleTaskClick("COMPLETED")}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
