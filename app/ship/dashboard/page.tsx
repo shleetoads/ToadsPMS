@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, Calendar, CheckCircle, Clock, Wrench, TrendingUp, Settings } from "lucide-react"
 import { Equipment } from '@/types/dashboard/equipment';
+import ExecutionItemBagde from "@/components/layout/execution/executionItemBadge"
+import { takeCoverage } from "v8"
 
 export default function ShipUserDashboard() {
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -294,8 +296,7 @@ export default function ShipUserDashboard() {
                               <div>
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                   <p className="text-sm font-medium">{task.plan_name}</p>
-                                  {task.critical && getCriticalBadge(task.critical)}
-                                  {getStatusBadge(task.status ?? '')}
+                                  <ExecutionItemBagde status={task.status ?? null} critical={task.critical ?? null} />
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                   <span>담당자: {task.manager}</span>

@@ -23,6 +23,7 @@ import { UsedParts } from '@/types/vessel/used_parts'; // ✅ interface import
 import { Maintenance } from '@/types/dashboard/maintenance';
 import { MaintenanceExtension } from '@/types/vessel/maintenance_extension';
 import EquipmentRuntimeInput from "@/components/layout/equipmentRuntime/equipmentRuntimeInput"
+import ExecutionItemBagde from "@/components/layout/execution/executionItemBadge"
 
 export default function MaintenanceExecutionPage() {
   
@@ -468,8 +469,7 @@ export default function MaintenanceExecutionPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="font-semibold">{item.plan_name}</h4>
                   <span className="text-sm text-gray-500">({item.plan_code})</span>
-                  {item.critical && getCriticalBadge(item.critical)}
-                  {getStatusBadge(item.status)}
+                  <ExecutionItemBagde status={item.status ?? null} critical={item.critical ?? null} />
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{item.specifications}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
