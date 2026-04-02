@@ -22,6 +22,7 @@ import { Inventory } from '@/types/vessel/inventory'; // ✅ interface import
 import { UsedParts } from '@/types/vessel/used_parts'; // ✅ interface import
 import { Maintenance } from '@/types/dashboard/maintenance';
 import { MaintenanceExtension } from '@/types/vessel/maintenance_extension';
+import EquipmentRuntimeInput from "@/components/layout/equipmentRuntime/equipmentRuntimeInput"
 
 export default function MaintenanceExecutionPage() {
   
@@ -66,6 +67,8 @@ export default function MaintenanceExecutionPage() {
     request_date: "",
     due_date: "",
     next_due_date: "",
+    due_run_hour: 0,
+    next_due_run_hour: 0,
     applicant: "",
     approval_status: "",
     approval_date: "",
@@ -330,7 +333,7 @@ export default function MaintenanceExecutionPage() {
   const filterByStatus = (items: Maintenance[], status: string): Maintenance[] => {
   return items
     .map((item) => {
-      const matchesScheduled = item.type === "TASK" && status === "SCHEDULED" && ["NORMAL", "WEEKLY", "MONTHLY"].includes(item.status)
+      const matchesScheduled = item.type === "TASK" && status === "SCHEDULED" && ["NORMAL", "WEEKLY", "MONTHLY"].includes(item.status?? "")
       const matchesStatus = item.type === "TASK" && item.status === status
       const filteredChildren = item.children
         ? filterByStatus(item.children, status)
@@ -364,6 +367,10 @@ export default function MaintenanceExecutionPage() {
       .filter(Boolean) as Maintenance[]
   }
 
+  const getRuntimeStr = (runtime: any) =>{
+    return `${Math.floor(runtime / 60)} hr ${runtime % 60} min`;
+  }
+
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "DELAYED":
@@ -376,7 +383,7 @@ export default function MaintenanceExecutionPage() {
         return <Badge variant="secondary">금주 예정</Badge>
       case "MONTHLY":
         return <Badge variant="secondary">금월 예정</Badge>
-      case "COMPLATE":
+      case "COMPLETE":
         return <Badge variant="default">완료</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
@@ -406,7 +413,7 @@ export default function MaintenanceExecutionPage() {
         return <PlusCircle className="w-4 h-4 text-orange-600" />
       case "NORMAL":
         return <Calendar className="w-4 h-4 text-blue-600" />
-      case "COMPLATE":
+      case "COMPLETE":
         return <CheckCircle className="w-4 h-4 text-green-600" />
       default:
         return <Calendar className="w-4 h-4" />
@@ -452,7 +459,7 @@ export default function MaintenanceExecutionPage() {
               id={`${item.equip_no}-${item.section_code}-${item.plan_code}`}
               checked={selectedWorks.includes(`${item.equip_no}-${item.section_code}-${item.plan_code}`)}
               onCheckedChange={() => handleTaskSelection(`${item.equip_no}-${item.section_code}-${item.plan_code}`, item.equip_name, item)}
-              disabled={item.status === "COMPLATE"}
+              disabled={item.status === "COMPLETE"}
               className="mt-1"
             />
             <div className="flex items-center gap-2">
@@ -466,21 +473,30 @@ export default function MaintenanceExecutionPage() {
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{item.specifications}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span>예정일: {item.extension_date ? item.extension_date : item.due_date}</span>
+                  <span>최근정비: {item.interval_term === 'HOURS'? `${item.lastest_date} (${getRuntimeStr(item.lastest_run_hour)})` : item.lastest_date}</span>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  {item.interval_term === "HOURS" ?(
+                    <span>예정일: {`${item.extension_date ? item.extension_date : item.due_date} (${getRuntimeStr((item.lastest_run_hour ?? 0 )+ (item.interval ?? 0) *60) })`}</span>
+                  ) : (
+                    <span>예정일: {item.extension_date ? item.extension_date : item.due_date}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
                   <span>담당자: {item.manager}</span>
-                  {item.status === "COMPLATE" && (
+                  {item.status === "COMPLETE" && (
                     <span className="text-green-600">완료일: {item.lastest_date}</span>
                   )}
                 </div>
               </div>
             </div>
           </div>
-          {item.status !== "COMPLATE" && item.status === "DELAYED" && (
+          {item.status !== "COMPLETE" && item.status === "DELAYED" && (
             <Button onClick={() => handleExtension(item)} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
               연장 신청
             </Button>
           )}
-          {item.status !== "COMPLATE" && (
+          {item.status !== "COMPLETE" && (
             <Button onClick={() => handleExecuteTask(item)} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
               개별 실행
             </Button>
@@ -490,8 +506,8 @@ export default function MaintenanceExecutionPage() {
     ))
   }
 
-  const handleExecuteTask = (task: any) => {
-    setSelectedWork({ ...task, equipment: task.equip_name })
+  const handleExecuteTask = (task: Maintenance) => {
+    setSelectedWork({ ...task, equipment: task.equip_name, machine_name: task.machine_name })
     setExecutionResult(task);
     setIsExecutionDialogOpen(true)
   }
@@ -570,7 +586,7 @@ export default function MaintenanceExecutionPage() {
       alert("저장이 완료되었습니다.");
 
       // 선택된 작업들의 상태를 완료로 업데이트
-      setWorks(updateEquipmentWorks(executionResult, "COMPLATE"))
+      setWorks(updateEquipmentWorks(executionResult, "COMPLETE"))
 
       setUsedItems([])
       setSelectedWork(null)
@@ -660,7 +676,7 @@ export default function MaintenanceExecutionPage() {
     let result: Maintenance[] = [];
 
     for (const item of items) {
-      if (item.type === "TASK" && item.status !== "COMPLATE" && item.equip_no === equipNo && item.section_code === sectionCode) {
+      if (item.type === "TASK" && item.status !== "COMPLETE" && item.equip_no === equipNo && item.section_code === sectionCode) {
         result.push(item);
       }
 
@@ -688,7 +704,7 @@ export default function MaintenanceExecutionPage() {
     let count = 0;
     filteredWorks.map(eq => {
       eq.children.map(section => {
-        count += section.children.filter(task => task.status !== "COMPLATE" && task.equip_no === equipNo && task.section_code === sectionCode).length
+        count += section.children.filter(task => task.status !== "COMPLETE" && task.equip_no === equipNo && task.section_code === sectionCode).length
       })
     });
 
@@ -801,7 +817,7 @@ export default function MaintenanceExecutionPage() {
       alert("저장이 완료되었습니다.");
 
       // 선택된 작업들의 상태를 완료로 업데이트
-      setWorks(updateBulkEquipmentWorks(bulkExecutionData, "COMPLATE"))
+      setWorks(updateBulkEquipmentWorks(bulkExecutionData, "COMPLETE"))
 
       setUsedItems([])
       setSelectedWorks([])
@@ -830,10 +846,10 @@ export default function MaintenanceExecutionPage() {
 
   const updateTaskData = (equip_no: string, section_code: string, plan_code: string, field: string, value: string) => {
     setBulkExecutionData((prev) => ({
-      ...prev,
+    ...prev,
       tasks: prev.tasks.map((task) => (task.equip_no === equip_no && task.section_code === section_code && task.plan_code === plan_code ? { ...task, [field]: value } : task)),
     }))
-  }
+}
 
   const updateTaskUsedParts = (equip_no: string, section_code: string, plan_code: string, usedPartnames: string, usedParts: any[]) => {
     setBulkExecutionData((prev) => ({
@@ -969,13 +985,13 @@ export default function MaintenanceExecutionPage() {
 
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setStatusFilter("COMPLETED")}>
+              onClick={() => setStatusFilter("COMPLETE")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{getTasksByStatus("COMPLATE")}</div>
+                <div className="text-2xl font-bold text-green-600">{getTasksByStatus("COMPLETE")}</div>
                 <p className="text-xs text-muted-foreground">실행 완료</p>
               </CardContent>
             </Card>
@@ -1034,7 +1050,7 @@ export default function MaintenanceExecutionPage() {
                     <SelectItem value="SCHEDULED">예정</SelectItem>
                     <SelectItem value="DELAYED">지연</SelectItem>
                     <SelectItem value="EXTENSION">연장</SelectItem>
-                    <SelectItem value="COMPLATE">완료</SelectItem>
+                    <SelectItem value="COMPLETE">완료</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex-1">
@@ -1049,17 +1065,6 @@ export default function MaintenanceExecutionPage() {
                     />
                   </div>
                 </div>
-                {/* <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">전체 카테고리</SelectItem>
-                    <SelectItem value="ENGINE">Engine</SelectItem>
-                    <SelectItem value="DECK">Deck</SelectItem>
-                    <SelectItem value="ETC">Etc</SelectItem>
-                  </SelectContent>
-                </Select> */}
               </div>
             </CardContent>
           </Card>
@@ -1126,7 +1131,7 @@ export default function MaintenanceExecutionPage() {
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium">{task.plan_name}</h4>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-[2fr_1fr] gap-2">
                             <div>
                               <Label className="text-xs">실제 소요시간</Label>
                               <Input
@@ -1148,6 +1153,14 @@ export default function MaintenanceExecutionPage() {
                               />
                             </div>
                           </div>
+                          
+                        {task.interval_term === 'HOURS' && (
+                          <EquipmentRuntimeInput
+                            equip_name={task.equip_name}
+                            machine_name={task.machine_name}
+                            handleRuntimeChanged={(runtime) => updateTaskData(task.equip_no, task.section_code || '', task.plan_code || '', "lastest_run_time", String(runtime))}
+                            />
+                        )}
                           <div>
                             <Label className="text-xs">사용 부품</Label>
                             <div className="flex flex-row gap-4">
@@ -1239,8 +1252,10 @@ export default function MaintenanceExecutionPage() {
                       <Input
                         type="number"
                         placeholder="시간"
-                        value={selectedWork.work_hours}
-                        onChange={(e) => updateTaskData(selectedWork.equip_no, selectedWork.section_code, selectedWork.plan_code, "work_hours", e.target.value)}
+                        value={executionResult.work_hours}
+                        // value={selectedWork.work_hours}
+                        onChange={(e) => setExecutionResult((prev) => ({ ...prev, work_hours: Number(e.target.value) }))}
+                        // onChange={(e) => updateTaskData(selectedWork.equip_no, selectedWork.section_code, selectedWork.plan_code, "work_hours", e.target.value)}
                         className="text-sm"
                       />
                     </div>
@@ -1249,12 +1264,23 @@ export default function MaintenanceExecutionPage() {
                       <Input
                         type="date"
                         placeholder="정비일자"
-                        value={selectedWork.next_due_date}
+                        value={executionResult.next_due_date}
+                        // value={selectedWork.next_due_date}
                         className='text-sm sm:w-40 md:w-36'
                         disabled
                       />
                     </div>
                   </div>
+
+                  {selectedWork.interval_term === 'HOURS' && (
+                    <EquipmentRuntimeInput
+                      equip_name={selectedWork.equip_name}
+                      machine_name={selectedWork.machine_name}
+                      handleRuntimeChanged={(runtime) => setExecutionResult((prev) => ({ ...prev, lastest_run_hour: runtime }))}
+                      // handleRuntimeChanged={(runtime) => updateTaskData(selectedWork.equip_no, selectedWork.section_code, selectedWork.plan_code, "lastest_run_hour", String(runtime))}
+                      />
+                  )}
+
                   <div>
                     <Label htmlFor="parts-used">사용 부품</Label>
                     <div className="flex flex-row gap-4">
@@ -1263,7 +1289,7 @@ export default function MaintenanceExecutionPage() {
                         placeholder="부품명"
                         value={selectedWork.used_partnanes}
                         disabled
-                      />
+                        />
                       <Button
                         id="parts-select"
                         onClick={() => handleInventoryOpen(selectedWork, true)}>...</Button>
@@ -1277,7 +1303,7 @@ export default function MaintenanceExecutionPage() {
                       value={executionResult.work_details}
                       onChange={(e) => setExecutionResult((prev) => ({ ...prev, work_details: e.target.value }))}
                       rows={3}
-                    />
+                      />
                   </div>
                   {selectedWork.status === "DELAYED" && (
                     <div>

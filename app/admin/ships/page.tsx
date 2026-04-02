@@ -213,6 +213,7 @@ export default function ShipManagementPage() {
           "LastestDate", 
           "Instructions",
           "PrevPMSCode",
+          "LastestOperatingTime",
         ];
         
         const jsonData: ExcelData[] = XLSX.utils.sheet_to_json(worksheet, {header: headerMapping, range: 1});

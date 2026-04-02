@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSql, getPool, query, execute } from '@/db'; // 이전에 만든 query 함수
 import { MaintenanceWork } from '@/types/vessel/maintenance_work';
+import { Maintenance } from '@/types/dashboard/maintenance';
 
 export async function POST(req: Request) {
   try {
     const remoteSiteUrl = process.env.REMOTE_SITE_URL;
     const body = await req.json();
-    const item : MaintenanceWork = body;
+    const item : Maintenance = body;
 
     const sql = await getSql();
     const pool = await getPool();
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
             , delay_reason
             , regist_date
             , regist_user
+            , lastest_run_hour
       )
       values (
               @vesselNo
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
             , @delayReason
             , getdate()
             , @registUser
+            , @lastestRunHour
       );`;
 
       let params = [
@@ -63,6 +66,7 @@ export async function POST(req: Request) {
         { name: 'delayReason', value: item.delay_reason }, 
         { name: 'registUser', value: item.regist_user }, 
         { name: 'modifyUser', value: item.modify_user }, 
+        { name: 'lastestRunHour', value: item.lastest_run_hour }, 
       ];
 
       let request = new sql.Request(transantion);
@@ -70,6 +74,25 @@ export async function POST(req: Request) {
       params?.forEach(p => request.input(p.name, p.value));
       let result = await request.query(queryString);
       count += result.rowsAffected[0];
+
+      queryString = `
+        EXEC dbo.usp_upsert_equipment_runtime
+          @vessel_no,
+          @machine_name,
+          @equip_no,
+          @equip_name,
+          @runtime`,
+      params = [
+        { name: 'vessel_no', value: item.vessel_no },
+        { name: 'machine_name', value: item.machine_name },
+        { name: 'equip_no', value: item.equip_no },
+        { name: 'equip_name', value: item.equip_name },
+        { name: 'runtime', value: item.lastest_run_hour }
+      ];
+
+      request = new sql.Request(transantion);
+      params?.forEach(p => request.input(p.name, p.value));
+      result = await request.query(queryString);
 
       queryString = `
       select max(work_order) as work_order
@@ -210,6 +233,7 @@ export async function POST(req: Request) {
          set lastest_date = getdate()
            , modify_date = getdate()
            , modify_user = @modifyUser
+           , lastest_run_hour = @lastestRunHour
        where vessel_no = @vesselNo
          and equip_no = @equipNo
          and section_code = @sectionCode
@@ -222,6 +246,7 @@ export async function POST(req: Request) {
         { name: 'planCode', value: item.plan_code }, 
         { name: 'registUser', value: item.regist_user }, 
         { name: 'modifyUser', value: item.modify_user }, 
+        { name: 'lastestRunHour', value: item.lastest_run_hour }, 
       ];
 
       request = new sql.Request(transantion);
@@ -271,6 +296,7 @@ export async function POST(req: Request) {
               , delay_reason
               , regist_date
               , regist_user
+              , lastest_run_hour
            from [maintenance_work]
           where vessel_no = @vesselNo
             and work_order = @workOrder;`,

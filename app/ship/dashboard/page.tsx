@@ -74,10 +74,43 @@ export default function ShipUserDashboard() {
     window.location.href = `/ship/execution?${params.toString()}`
   }
 
-  const getDaysUntilColor = (days: number) => {
-    if (days <= 7) return "text-red-600"
-    if (days <= 14) return "text-orange-600"
-    return "text-blue-600"
+  const DaysUntil = (due_date?: string | null, extension_date?: string | null) => {
+    const extDays = getDaysDiff(extension_date)
+    const dueDays = getDaysDiff(due_date)
+    const days = extDays ?? dueDays
+
+    if (days === null) return null
+
+    let style = ''
+    
+    if (days <= 7)
+      style = "text-red-600"
+    else if (days <= 14)
+      style = "text-orange-600"
+    else
+      style = "text-blue-600"
+
+    return (
+      <div className="text-right">
+        <p className="text-sm font-medium">{extension_date ?? due_date}</p>
+        <p className={`text-xs ${style}`}>
+          {`${Math.abs(days)} ${days < 0 ? '일 전' : '일 후'}`}
+        </p>
+      </div>
+    )
+  }
+  
+  const getDaysDiff = (dateStr?: string | null) => {
+    if (!dateStr) return null
+
+    const today = new Date()
+    const target = new Date(dateStr)
+
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const targetOnly = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+
+    const msPerDay = 1000 * 60 * 60 * 24
+    return Math.round((targetOnly.getTime() - todayOnly.getTime()) / msPerDay)
   }
 
   /**
@@ -133,11 +166,11 @@ export default function ShipUserDashboard() {
   const getTasksByCalendar = (status: string, day: string) => {
     if (day === 'WEEK') {
       return equipmentTasks.reduce((total, eq) => {
-        return total + eq.children.filter((task) => task.status === status && isThisWeek(new Date(task.due_date))).length
+        return total + eq.children.filter((task) => task.status === status && isThisWeek(new Date(task.due_date ?? 0))).length
       }, 0)
     } else {
       return equipmentTasks.reduce((total, eq) => {
-        return total + eq.children.filter((task) => task.status === status && isThisMonth(new Date(task.due_date))).length
+        return total + eq.children.filter((task) => task.status === status && isThisMonth(new Date(task.due_date?? 0))).length
       }, 0)
     }
   }
@@ -191,7 +224,7 @@ export default function ShipUserDashboard() {
                 <Calendar className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{getTasksByCalendar("NORMAL", 'WEEK') + getTasksByCalendar("EXTENSION", 'WEEK')}</div>
+                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus('WEEKLY') + getTasksByCalendar("EXTENSION", 'WEEK')}</div>
                 <p className="text-xs text-muted-foreground">이번 주 예정</p>
               </CardContent>
             </Card>
@@ -205,14 +238,14 @@ export default function ShipUserDashboard() {
                 <Clock className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{getTasksByCalendar("NORMAL", 'MONTH') + getTasksByCalendar("EXTENSION", 'MONTH')}</div>
+                <div className="text-2xl font-bold text-blue-600">{getTasksByStatus('MONTHLY') + getTasksByCalendar("EXTENSION", 'MONTH')}</div>
                 <p className="text-xs text-muted-foreground">이번 달 예정</p>
               </CardContent>
             </Card>
 
             <Card
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("COMPLETED")}
+              onClick={() => handleTaskClick("COMPLETE")}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
@@ -262,7 +295,7 @@ export default function ShipUserDashboard() {
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                   <p className="text-sm font-medium">{task.plan_name}</p>
                                   {task.critical && getCriticalBadge(task.critical)}
-                                  {getStatusBadge(task.status)}
+                                  {getStatusBadge(task.status ?? '')}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                   <span>담당자: {task.manager}</span>
@@ -271,10 +304,7 @@ export default function ShipUserDashboard() {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{task.extension_date ? task.extension_date : task.due_date}</p>
-                              <p className={`text-xs ${getDaysUntilColor(task.days_until)}`}>{Math.abs(task.extension_days_until ? task.extension_days_until : task.days_until)} {(task.extension_days_until ? task.extension_days_until : task.days_until) < 0 ? '일 전' : '일 후'}</p>
-                            </div>
+                            {DaysUntil(task.due_date,task.extension_date)}
                           </div>
                           )
                         ))}

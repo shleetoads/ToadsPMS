@@ -1,10 +1,9 @@
-import { useEffect, useState , useRef } from "react"
+import { useEffect, useState } from "react"
 import { EquipmentRuntimeData, MachineRuntimeData } from '@/types/vessel/equipmentRuntime'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 
 import {
   Dialog,
@@ -12,9 +11,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Edit, Settings, Wrench, Calendar, Minus } from "lucide-react"
+import { Plus , Minus } from "lucide-react"
+import EquipmentRuntimeInput from "./equipmentRuntimeInput"
 
 interface Props {
   vesselNo: string
@@ -81,6 +80,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
       const insertedData = {
         vesselNo: equipmentData.vessel_no,
         equipNo: equipmentData.equip_no,
+        equipName: equipmentData.equip_name,
         machineName: equipmentData.machine_name,
         runtime: runtime,
       };
@@ -106,8 +106,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
 
     const RuntimeEditDialog = ({ runtimeData, insertHandler, closeHandler }: DataProps) =>{
       const [isEditDialogOpen, setIsEditDialogOpen] = useState(true)
-      const [inputHour, setInputHour] = useState(0)
-      const [inputMin, setInputMin] = useState(0)
+      const [runtime, setRuntime] = useState(0)
 
       const OnDialogOpen = (open : boolean) => {
         setIsEditDialogOpen(open)
@@ -125,36 +124,17 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
         <Dialog open={isEditDialogOpen} onOpenChange={OnDialogOpen}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>{runtimeData.equip_name} 운전 시간 입력</DialogTitle>
+                  <DialogTitle>운전 시간 입력</DialogTitle>
                   <DialogDescription>장비의 운전 시간를 입력하세요</DialogDescription>
                 </DialogHeader>
-                <div className="flex items-end gap-2">
-                  <input
-                    className="w-60 h-12 text-center border rounded"
-                    type="number"
-                    onChange={(e) => {
-                      if (e.target.value.length > 6) {
-                        e.target.value = e.target.value.slice(0, 6)
-                      }
-                      setInputHour(Number(e.target.value))
-                    }}
+                <EquipmentRuntimeInput
+                  equip_name={runtimeData.equip_name}
+                  machine_name={runtimeData.machine_name}
+                  handleRuntimeChanged={setRuntime}
                   />
-                  <span className="text-center"> hr </span>
-                  <input
-                    className="w-20 h-12 text-center border rounded"
-                    type="number"
-                    onChange={(e) => {
-                      if (e.target.value.length > 2) {
-                        e.target.value = e.target.value.slice(0, 2)
-                      }
-                      setInputMin(Number(e.target.value))
-                    }}
-                  />
-                  <span>min</span>
-                </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => closeHandler()} style={{cursor: 'pointer'}}> 취소 </Button>
-                  <Button onClick={() => OnInsertData(inputHour * 60 + inputMin)}> 수정 </Button>
+                  <Button onClick={() => OnInsertData(runtime)}> 수정 </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -186,10 +166,10 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
           </CardHeader>
 
           <CardContent className="flex flex-col gap-3">
-            <Odometer value={equipmentData.runtime ?? 0} />
+            <Odometer value={equipmentData.lastest_runtime ?? 0} />
 
             <span className="text-gray-500 text-sm">
-              Last Update : {formatDateKST(equipmentData.upload_date)}
+              Last Update : {formatDateKST(equipmentData.lastest_upload_date)}
             </span>
           </CardContent>
         </Card>
@@ -228,7 +208,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
 
           <CollapsibleContent className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
             {machineData.equipment_runtime_datas.map((equipmentData) => (
-              <RuntimeEquipmentTag equipmentData={equipmentData}
+              <RuntimeEquipmentTag key={equipmentData.equip_no} equipmentData={equipmentData}
               />
             ))}
           </CollapsibleContent>
@@ -246,7 +226,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
           </CardHeader>
           <CardContent className="space-y-4">
             {machineDatas.map((machineData) => (
-              <RuntimeMachineTag machineData={machineData} />
+              <RuntimeMachineTag key={machineData.machine_name} machineData={machineData} />
             ))}
           </CardContent>
         </Card>

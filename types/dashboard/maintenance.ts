@@ -39,4 +39,9 @@ export interface Maintenance {
     regist_user?: string;
     modify_date?: string;
     modify_user?: string;
+
+    lastest_run_hour?: number;
+    due_run_hour?: number;
+    next_due_run_hour?: number;
+    diff_per_day?: number;
 }

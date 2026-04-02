@@ -20,4 +20,5 @@ export interface MaintenanceWork {
     regist_user: string;
     modify_date: string;
     modify_user: string;
+    lastest_run_hour?: number;
 }

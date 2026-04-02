@@ -20,4 +20,6 @@ export interface MaintenanceExtension {
     regist_user?: string;
     modify_date?: string;
     modify_user?: string;
+    due_run_hour?: number;
+    next_due_run_hour?: number;
 }
