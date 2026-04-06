@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { EquipmentRuntimeData, MachineRuntimeData } from '@/types/vessel/equipmentRuntime'
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 
@@ -47,45 +47,37 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
       .toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
       .slice(0, 16) + " (KST)"
   }
-
-  const Odometer = ({
-    value = 0,
-    size = "2xl"
-  }: {
+    
+  type OdometerProps = {
     value?: number
-    size?: string
-  }) => {
+    size?: "xl" | "2xl"
+  }
+
+  const Odometer = ({ value = 0, size = "2xl" }: OdometerProps) => {
     const totalMinutes = value ?? 0
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
 
     const hourStr = hours.toString()
     const minStr = minutes.toString().padStart(2, "0")
-    
-    let textStyle = "text-2xl font-bold"
 
-    switch(size){
-      case "xl":
-        textStyle = "text-xl font-bold"
-        break
-      case "2xl":
-        textStyle = "text-2xl font-bold"
-        break
+    const sizeMap = {
+      xl: "text-xl",
+      "2xl": "text-2xl",
     }
 
-    return (
-    <div className="flex items-end gap-1">
-      {/* Hours */}
-      <span className={textStyle}>{hourStr}</span>
-      <span className="text-sm text-gray-500">H</span>
+    const textStyle = `${sizeMap[size]} font-bold`
 
-      {/* Minutes */}
-      <span className={textStyle}>{minStr}</span>
-      <span className="text-sm text-gray-500">M</span>
-    </div>
+    return (
+      <div className="flex items-end gap-1">
+        <span className={textStyle}>{hourStr}</span>
+        <span className="text-sm text-gray-500">H</span>
+        <span className={textStyle}>{minStr}</span>
+        <span className="text-sm text-gray-500">M</span>
+      </div>
     )
   }
-  
+    
   const handleOnMachineClick = ( machineData: MachineRuntimeData ) => {
     setSelectedMachineData(machineData)
     setIsOpenDialog(true)
@@ -178,36 +170,43 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
   }
 
   const MainEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
-    return(
+    return (
       <Card onClick={() => handleOnMachineClick(machineData)}>
-        <CardContent>
-          <CardHeader className="text-2xl font-semibold"> {machineData.machine_name} </CardHeader>
-          <div className="justify-self-center">
-            <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
-          </div>
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold">
+            {machineData.machine_name}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex justify-center">
+          <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
         </CardContent>
       </Card>
     )
   }
 
   const GeneratorEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
-    return(
+    return (
       <Card onClick={() => handleOnMachineClick(machineData)}>
-        <CardContent className="grid grid-cols-[2fr_2fr_1fr]">
-          <p className="text-2xl font-semibold"> G/E </p>
-          <div>
+        <CardContent>
+          <CardTitle className="text-2xl font-semibold"> G/E </CardTitle>
+          <div className="space-y-2">
             {machineData.equipment_runtime_datas.map((equipData) =>
-              equipData.equip_name != "EM'CY GENERATOR ENGINE" && (
-                <div key={equipData.equip_name} className="grid grid-cols-[1fr_1fr] gap-2 items-end">
-                  <span className="text-xl font-semibold justify-self-start">
+              equipData.equip_name !== "EM'CY GENERATOR ENGINE" ? (
+                <div
+                  key={equipData.equip_no}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <span className="text-xl justify-self-start">
                     {getSimpleName(equipData.equip_name)}
                   </span>
 
                   <div className="justify-self-end">
-                    <Odometer value={equipData.lastest_runtime} size="xl"/>
+                    <Odometer value={equipData.lastest_runtime} size="xl" />
                   </div>
                 </div>
-              ))}
+              ) : null
+            )}
           </div>
         </CardContent>
       </Card>
