@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import EquipmentRuntimeInput from "./equipmentRuntimeInput"
-import { AlarmSmoke } from "lucide-react"
 
 interface Props {
   vesselNo: string
@@ -62,8 +61,17 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
 
     const hourStr = hours.toString()
     const minStr = minutes.toString().padStart(2, "0")
+    
+    let textStyle = "text-2xl font-bold"
 
-    const textStyle = `text-${size} font-bold`
+    switch(size){
+      case "xl":
+        textStyle = "text-xl font-bold"
+        break
+      case "2xl":
+        textStyle = "text-2xl font-bold"
+        break
+    }
 
     return (
     <div className="flex items-end gap-1">
@@ -147,7 +155,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
         </div>
 
         {selectedEquipment && (
-          <Card className="">
+          <Card>
             <CardContent>
               <Odometer value={selectedEquipment.lastest_runtime ?? 0} />
               <span className="text-gray-500 text-sm">
@@ -171,12 +179,12 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
 
   const MainEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
     return(
-      <Card className="gap-y-2" onClick={() => handleOnMachineClick(machineData)}>
-        <CardHeader className="text-2xl font-semibold">
-          {machineData.machine_name}
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
+      <Card onClick={() => handleOnMachineClick(machineData)}>
+        <CardContent>
+          <CardHeader className="text-2xl font-semibold"> {machineData.machine_name} </CardHeader>
+          <div className="justify-self-center">
+            <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
+          </div>
         </CardContent>
       </Card>
     )
@@ -184,8 +192,8 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
 
   const GeneratorEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
     return(
-      <Card className="gap-y-2" onClick={() => handleOnMachineClick(machineData)}>
-        <CardContent className="grid grid-cols-[2fr_2fr_1fr] gap-x-2">
+      <Card onClick={() => handleOnMachineClick(machineData)}>
+        <CardContent className="grid grid-cols-[2fr_2fr_1fr]">
           <p className="text-2xl font-semibold"> G/E </p>
           <div>
             {machineData.equipment_runtime_datas.map((equipData) =>
