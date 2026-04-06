@@ -1,19 +1,16 @@
 import { useEffect, useState } from "react"
 import { EquipmentRuntimeData, MachineRuntimeData } from '@/types/vessel/equipmentRuntime'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
-
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Plus , Minus } from "lucide-react"
 import EquipmentRuntimeInput from "./equipmentRuntimeInput"
+import { AlarmSmoke } from "lucide-react"
 
 interface Props {
   vesselNo: string
@@ -21,6 +18,8 @@ interface Props {
 
 export default function EquipmentRuntime({ vesselNo }: Props) {
   const [machineRuntimes, setMachineRuntimes] = useState<MachineRuntimeData[]>([])
+  const [isOpenDialog, setIsOpenDialog] = useState(false)
+  const [selectedMachineData, setSelectedMachineData] = useState<MachineRuntimeData>()
 
   const fetchEquipmentRuntimes = (vesselNo: string) => {
     fetch(`/api/ship/equipmentRuntime/all?vesselNo=${vesselNo}`)
@@ -29,59 +28,84 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
       .catch(err => console.error(err))
   }
 
-
   useEffect(() => {
     fetchEquipmentRuntimes(vesselNo)
   }, [vesselNo])
 
-  const Odometer = ({ value = 0 }: { value: number }) => {
-    const [digits, setDigits] = useState<string[]>([])
+  
+  function getMaxRuntime(datas: EquipmentRuntimeData[]) {
+    return Math.max(...datas.map((data) => data.lastest_runtime))
+  }
 
-    useEffect(() => {
-      const totalMinutes = value ?? 0
-      const hours = Math.floor(totalMinutes / 60)
-      const minutes = totalMinutes % 60
+  function getSimpleName(name: string) {
+    return name.split(" ")[0]
+  }
+  
+  const formatDateKST = (date?: string) => {
+    if (!date) return "0000-00-00 00:00"
 
-      const hourStr = hours.toString().padStart(6, "0")
-      const minStr = minutes.toString().padStart(2, "0")
+    return new Date(date)
+      .toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
+      .slice(0, 16) + " (KST)"
+  }
 
-      setDigits([hourStr,minStr])
-    }, [value])
+  const Odometer = ({
+    value = 0,
+    size = "2xl"
+  }: {
+    value?: number
+    size?: string
+  }) => {
+    const totalMinutes = value ?? 0
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    const hourStr = hours.toString()
+    const minStr = minutes.toString().padStart(2, "0")
+
+    const textStyle = `text-${size} font-bold`
 
     return (
-    <div className="flex items-end gap-2">
+    <div className="flex items-end gap-1">
       {/* Hours */}
-      <span className="text-2xl font-bold">{digits[0]}</span>
-      <span className="text-sm text-gray-500">hr</span>
+      <span className={textStyle}>{hourStr}</span>
+      <span className="text-sm text-gray-500">H</span>
 
       {/* Minutes */}
-      <span className="text-2xl font-bold ml-2">{digits[1]}</span>
-      <span className="text-sm text-gray-500">min</span>
+      <span className={textStyle}>{minStr}</span>
+      <span className="text-sm text-gray-500">M</span>
     </div>
     )
   }
+  
+  const handleOnMachineClick = ( machineData: MachineRuntimeData ) => {
+    setSelectedMachineData(machineData)
+    setIsOpenDialog(true)
+  }
 
-  const RuntimeEquipmentTag = ({equipmentData}: {equipmentData: EquipmentRuntimeData}) => {
-    type DataProps = {
-      runtimeData: EquipmentRuntimeData
-      insertHandler: (runtime: number) => void
-      closeHandler: () => void
-    }
-
-    const [ isEdit , setIsEdit ] = useState(false)
-
-    const insertHandler = (runtime : number) =>{
-      handleInsert(runtime)
-      
-      fetchEquipmentRuntimes(vesselNo)
-    }
+  const DialogEquipmentDataTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
+    const [selectedName, setSelectedName] = useState('')
+    const [selectedEquipment, setSelectedEquipment] = useState<EquipmentRuntimeData>()
+    const [runtime, setRuntime] = useState(0)
     
+    useEffect(() => {
+      setSelectedEquipment(machineData.equipment_runtime_datas.find((equip) => (equip.equip_name === selectedName)))
+   }, [selectedName])
+
+
     const handleInsert = async (runtime : number) => {
+      if(!selectedEquipment) return
+
+      if(selectedEquipment.lastest_runtime > runtime){
+        alert("입력한 운전시간은 기존 운전시간보다 작을 수 없습니다.")
+        return
+      }
+
       const insertedData = {
-        vesselNo: equipmentData.vessel_no,
-        equipNo: equipmentData.equip_no,
-        equipName: equipmentData.equip_name,
-        machineName: equipmentData.machine_name,
+        vesselNo: selectedEquipment.vessel_no,
+        equipNo: selectedEquipment.equip_no,
+        equipName: selectedEquipment.equip_name,
+        machineName: selectedEquipment.machine_name,
         runtime: runtime,
       };
 
@@ -94,149 +118,131 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
       const data = await res.json();
 
       if (data.success) {
-        alert("저장이 완료되었습니다.");
+        alert("저장이 완료되었습니다.")
+        setIsOpenDialog(false)  
+        fetchEquipmentRuntimes(vesselNo)
       } else {
         alert(data.message);
       }
     }
 
-    const closeHandler = () =>{
-      setIsEdit(false)
+    const OnInsertData = (runtime : number) => {
+      handleInsert(runtime)
     }
 
-    const RuntimeEditDialog = ({ runtimeData, insertHandler, closeHandler }: DataProps) =>{
-      const [isEditDialogOpen, setIsEditDialogOpen] = useState(true)
-      const [runtime, setRuntime] = useState(0)
-
-      const OnDialogOpen = (open : boolean) => {
-        setIsEditDialogOpen(open)
-        if (!open) {
-          closeHandler()
-        }
-      }
-      
-      const OnInsertData = (runtime : number) => {
-        insertHandler(runtime)
-        closeHandler()
-      }
-
-      return(
-        <Dialog open={isEditDialogOpen} onOpenChange={OnDialogOpen}>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>운전 시간 입력</DialogTitle>
-                  <DialogDescription>장비의 운전 시간를 입력하세요</DialogDescription>
-                </DialogHeader>
-                <EquipmentRuntimeInput
-                  equip_name={runtimeData.equip_name}
-                  machine_name={runtimeData.machine_name}
-                  handleRuntimeChanged={setRuntime}
-                  />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => closeHandler()} style={{cursor: 'pointer'}}> 취소 </Button>
-                  <Button onClick={() => OnInsertData(runtime)}> 수정 </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-      )
-    }
-
-    const formatDateKST = (date?: string) => {
-      if (!date) return "0000-00-00 00:00"
-
-      return new Date(date)
-        .toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
-        .slice(0, 16) + " (KST)"
-    }
-
-    return (
-      <div>
-        <Card
-          key={equipmentData.equip_no}
-          className="hover:shadow-lg transition-shadow h-full min-w-[320px]"
-          onClick={() => setIsEdit(true)}
-          >
-          <CardHeader>
-            <CardTitle className="text-lg truncate">
-              {equipmentData.equip_name}
-            </CardTitle>
-            <CardDescription>
-              {equipmentData.machine_name}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-3">
-            <Odometer value={equipmentData.lastest_runtime ?? 0} />
-
-            <span className="text-gray-500 text-sm">
-              Last Update : {formatDateKST(equipmentData.lastest_upload_date)}
-            </span>
-          </CardContent>
-        </Card>
-
-        {isEdit && 
-          <RuntimeEditDialog 
-            runtimeData={equipmentData} 
-            insertHandler={(runtime)=>{insertHandler(runtime)}}
-            closeHandler={()=>{closeHandler()}}
-          />}
-      </div>
-    )
-  }
-
-  const RuntimeMachineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    
-    return (
-      <div className="rounded-lg border p-3">
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <div
-            className="flex cursor-pointer items-center justify-between"
-            onClick={() => setIsOpen((prev) => !prev)}
-          >
-            <p className="font-semibold">
-              {machineData.machine_name} ({machineData.equipment_runtime_datas.length})
-            </p>
-            <span className="text-sm text-gray-500">
-              {isOpen ? (
-                <Minus />
-              ) : (
-                <Plus />
-              )}
-            </span>
-          </div>
-
-          <CollapsibleContent className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-            {machineData.equipment_runtime_datas.map((equipmentData) => (
-              <RuntimeEquipmentTag key={equipmentData.equip_no} equipmentData={equipmentData}
-              />
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
-    )
-  }
-
-  const RuntimeTag = ({machineDatas}: {machineDatas: MachineRuntimeData[]}) =>{
     return(
-      <div>
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">장비 운전 시간 관리</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {machineDatas.map((machineData) => (
-              <RuntimeMachineTag key={machineData.machine_name} machineData={machineData} />
-            ))}
-          </CardContent>
-        </Card>
+      <div key={"dialog_" + machineData.machine_name}>
+        <div className="mb-4">
+          <span className="text-sx"> {machineData.machine_name} </span>
+          <Select value={selectedName} onValueChange={setSelectedName}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="장비 선택"/>
+            </SelectTrigger>
+            <SelectContent>
+              {machineData.equipment_runtime_datas.map((equip) => (
+                <SelectItem key={equip.equip_name} value={equip.equip_name}> {equip.equip_name} </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedEquipment && (
+          <Card className="">
+            <CardContent>
+              <Odometer value={selectedEquipment.lastest_runtime ?? 0} />
+              <span className="text-gray-500 text-sm">
+                Last Update : {formatDateKST(selectedEquipment.lastest_upload_date)}
+              </span>
+            </CardContent>
+            <CardContent className="flex flex-col gap-2">
+              <EquipmentRuntimeInput
+                equip_name={selectedEquipment.equip_name}
+                machine_name={selectedEquipment.machine_name}
+                handleRuntimeChanged={setRuntime}
+              />
+
+              <Button className="self-end" onClick={() => OnInsertData(runtime)}> 수정 </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+    )  
+  }
+
+  const MainEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
+    return(
+      <Card className="gap-y-2" onClick={() => handleOnMachineClick(machineData)}>
+        <CardHeader className="text-2xl font-semibold">
+          {machineData.machine_name}
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
+        </CardContent>
+      </Card>
     )
   }
+
+  const GeneratorEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
+    return(
+      <Card className="gap-y-2" onClick={() => handleOnMachineClick(machineData)}>
+        <CardContent className="grid grid-cols-[2fr_2fr_1fr] gap-x-2">
+          <p className="text-2xl font-semibold"> G/E </p>
+          <div>
+            {machineData.equipment_runtime_datas.map((equipData) =>
+              equipData.equip_name != "EM'CY GENERATOR ENGINE" && (
+                <div key={equipData.equip_name} className="grid grid-cols-[1fr_1fr] gap-2 items-end">
+                  <span className="text-xl font-semibold justify-self-start">
+                    {getSimpleName(equipData.equip_name)}
+                  </span>
+
+                  <div className="justify-self-end">
+                    <Odometer value={equipData.lastest_runtime} size="xl"/>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const MachineDialog = () => {
+    return(
+      selectedMachineData && (
+        <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
+          <DialogContent>
+          <DialogTitle>장비 운전 시간 관리</DialogTitle>
+          <DialogEquipmentDataTag machineData={selectedMachineData}></DialogEquipmentDataTag>
+          </DialogContent>
+        </Dialog>
+      )
+    )
+  }
+
+  const MachineTag = ({ machineDatas }: { machineDatas: MachineRuntimeData[] }) => {
+    machineDatas.sort((a, b) =>b.machine_name.localeCompare(a.machine_name))
+    return(
+      <div className="grid grid-cols-2 gap-6">
+        {machineDatas.map((machineData) =>
+          machineData.machine_name === "MAIN ENGINE" ? (
+            <MainEngineTag key={machineData.machine_name} machineData={machineData} />
+          ) : (
+            <GeneratorEngineTag key={machineData.machine_name} machineData={machineData} />
+          )
+        )}
+      </div>
+    )  
+  }
+
 
   return (
     <div className="mb-6">
-      <RuntimeTag machineDatas={machineRuntimes} />
+      <MachineTag machineDatas={machineRuntimes} />
+
+      {isOpenDialog && (
+        <MachineDialog></MachineDialog>
+      )}
+
     </div>
   )
 }

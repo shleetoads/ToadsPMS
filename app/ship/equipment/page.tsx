@@ -21,7 +21,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Search, Edit, Settings, Wrench, Calendar } from "lucide-react"
 import { Machine } from '@/types/common/machine'; // ✅ interface import
 import { Equipment } from '@/types/vessel/equipment'; // ✅ interface import
-import EquipmentRuntime from "@/components/layout/equipmentRuntime/equipmentRuntime"
 
 export default function ShipEquipmentPage() {
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -296,9 +295,6 @@ export default function ShipEquipmentPage() {
             </Card>
           </div>
 
-          {/* Equipment Runtime */}
-          <EquipmentRuntime vesselNo={userInfo.ship_no}></EquipmentRuntime>
-
           {/* 필터 및 검색 */}
           <Card className="mb-6">
             <CardHeader>
@@ -373,14 +369,14 @@ export default function ShipEquipmentPage() {
                         <span className="text-gray-500">제조사:</span>
                         <p className="font-medium">{item.manufacturer}</p>
                       </div>
-                      <div>
+                      {/* <div>
                         <span className="text-gray-500">최근 정비:</span>
                         <p className="font-medium">{item.lastest_date}</p>
                       </div>
                       <div>
                         <span className="text-gray-500">주요 사양:</span>
                         <p className="font-medium">{item.specifications}</p>
-                      </div>
+                      </div> */}
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t">

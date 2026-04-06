@@ -285,7 +285,7 @@ SELECT
           WHEN lastest_date_only IS NOT NULL
            AND lastest_date_only >= DATEADD(month, -1, today_date)
            AND lastest_date_only <= today_date
-          THEN 'COMPLATE'
+          THEN 'COMPLETE'
 
           WHEN due_date_only IS NOT NULL
            AND DATEDIFF(day, today_date, due_date_only) >= 0

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, Calendar, CheckCircle, Clock, Wrench, TrendingUp, Settings } from "lucide-react"
 import { Equipment } from '@/types/dashboard/equipment';
 import ExecutionItemBagde from "@/components/layout/execution/executionItemBadge"
-import { takeCoverage } from "v8"
+import EquipmentRuntime from "@/components/layout/equipmentRuntime/equipmentRuntime"
+import ExecutionDashBoardItem from "@/components/layout/execution/executionDashBoardItem"
 
 export default function ShipUserDashboard() {
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -40,36 +41,6 @@ export default function ShipUserDashboard() {
   }, [equipmentTasks])
 
   if (!userInfo) return null
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "DELAYED":
-        return <Badge variant="destructive">지연</Badge>
-      case "EXTENSION":
-        return <Badge variant="outline">연장</Badge>
-      case "NORMAL":
-        return <Badge variant="secondary">예정</Badge>
-      case "COMPLATE":
-        return <Badge variant="default">완료</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
-  
-  const getCriticalBadge = (critical: string) => {
-    switch (critical) {
-      case "NORMAL":
-        return <Badge variant="outline" className="text-xs">일상정비</Badge>
-      case "CRITICAL":
-        return <Badge variant="destructive" className="text-xs">Critical</Badge>
-      case "DOCK":
-        return <Badge variant="secondary" className="text-xs">Dock</Badge>
-      case "CMS":
-        return <Badge variant="default" className="text-xs">CMS</Badge>
-      default:
-        return ''
-    }
-  }
 
   const handleTaskClick = (status: string) => {
     const params = new URLSearchParams({ status: status })
@@ -203,61 +174,15 @@ export default function ShipUserDashboard() {
 
           {/* 주요 지표 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("DELAYED")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">지연된 작업</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{getTasksByStatus("DELAYED")}</div>
-                <p className="text-xs text-muted-foreground">즉시 조치 필요</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("WEEKLY")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">금주 예정 작업</CardTitle>
-                <Calendar className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus('WEEKLY') + getTasksByCalendar("EXTENSION", 'WEEK')}</div>
-                <p className="text-xs text-muted-foreground">이번 주 예정</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("MONTHLY")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">금월 예정 작업</CardTitle>
-                <Clock className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{getTasksByStatus('MONTHLY') + getTasksByCalendar("EXTENSION", 'MONTH')}</div>
-                <p className="text-xs text-muted-foreground">이번 달 예정</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTaskClick("COMPLETE")}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{getTasksByStatus("COMPLATE")}</div>
-                <p className="text-xs text-muted-foreground">이번 달 완료</p>
-              </CardContent>
-            </Card>
+            <ExecutionDashBoardItem status="DELAYED" count={getTasksByStatus("DELAYED")} handleOnClick={(status) => {handleTaskClick(status)}} />
+            <ExecutionDashBoardItem status="WEEKLY" count={getTasksByStatus('WEEKLY') + getTasksByCalendar("EXTENSION", 'WEEK')} handleOnClick={(status) => {handleTaskClick(status)}} />
+            <ExecutionDashBoardItem status="MONTHLY" count={getTasksByStatus('MONTHLY') + getTasksByCalendar("EXTENSION", 'MONTH')} handleOnClick={(status) => {handleTaskClick(status)}} />
+            <ExecutionDashBoardItem status="COMPLETE" count={getTasksByStatus("COMPLETE")} handleOnClick={(status) => {handleTaskClick(status)}} />
+          </div>
+          
+          {/* Equipment Runtime */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+            <EquipmentRuntime vesselNo={userInfo.ship_no}></EquipmentRuntime>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -287,7 +212,7 @@ export default function ShipUserDashboard() {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm text-gray-700 mb-2">예정된 작업 목록:</h4>
                         {equipment.children.map((task) => (
-                          task.status !== "COMPLATE" && (
+                          task.status !== "COMPLETE" && (
                           <div key={`${task.equip_no}-${task.section_code}-${task.plan_code}`} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
@@ -330,7 +255,7 @@ export default function ShipUserDashboard() {
                 <div className="space-y-4">
                   {filteredEquipment.map((equipment) => (
                     equipment.children.map((task) => (
-                      task.status === "COMPLATE" && (
+                      task.status === "COMPLETE" && (
                     <div key={task.equip_no + '-' + task.section_code + '-' + task.plan_code} className="flex items-center justify-between p-3 border rounded-lg bg-white">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -339,7 +264,7 @@ export default function ShipUserDashboard() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{task.plan_name}</h4>
-                            {task.critical && getCriticalBadge(task.critical)}
+                            <ExecutionItemBagde critical={task.critical ?? null} status={null} />
                           </div>
                           <p className="text-sm text-gray-500">{task.equip_name}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">

@@ -24,6 +24,7 @@ import { Maintenance } from '@/types/dashboard/maintenance';
 import { MaintenanceExtension } from '@/types/vessel/maintenance_extension';
 import EquipmentRuntimeInput from "@/components/layout/equipmentRuntime/equipmentRuntimeInput"
 import ExecutionItemBagde from "@/components/layout/execution/executionItemBadge"
+import ExecutionDashBoardItem from "@/components/layout/execution/executionDashBoardItem"
 
 export default function MaintenanceExecutionPage() {
   
@@ -944,57 +945,30 @@ export default function MaintenanceExecutionPage() {
 
           {/* 통계 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setStatusFilter("ALL")}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 작업 수</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{getTotalTasks()}</div>
-                <p className="text-xs text-muted-foreground">전체 작업</p>
-              </CardContent>
-            </Card>
+            <ExecutionDashBoardItem 
+              status="ALL"
+              count={getTotalTasks()}
+              handleOnClick={(status) => setStatusFilter(status)}
+              />
 
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setStatusFilter("DELAYED")}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">지연된 작업</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{getTasksByStatus("DELAYED")}</div>
-                <p className="text-xs text-muted-foreground">즉시 실행 필요</p>
-              </CardContent>
-            </Card>
+            <ExecutionDashBoardItem
+              status="DELAYED"
+              count={getTasksByStatus("DELAYED")}
+              handleOnClick={(status) => setStatusFilter(status)}
+              />
 
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setStatusFilter("SCHEDULED")}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">예정된 작업</CardTitle>
-                <Calendar className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus("NORMAL") +getTasksByStatus("WEEKLY") +getTasksByStatus("MONTHLY") + getTasksByStatus("EXTENSION")}</div>
-                <p className="text-xs text-muted-foreground">실행 대기</p>
-              </CardContent>
-            </Card>
+            <ExecutionDashBoardItem
+              status="SCHEDULED"
+              count={getTasksByStatus("NORMAL") +getTasksByStatus("WEEKLY") +getTasksByStatus("MONTHLY") + getTasksByStatus("EXTENSION")}
+              handleOnClick={(status) => setStatusFilter(status)}
+              />
 
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setStatusFilter("COMPLETE")}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">완료된 작업</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{getTasksByStatus("COMPLETE")}</div>
-                <p className="text-xs text-muted-foreground">실행 완료</p>
-              </CardContent>
-            </Card>
+            <ExecutionDashBoardItem
+              status="COMPLETE"
+              count={getTasksByStatus("COMPLETE")}
+              handleOnClick={(status) => setStatusFilter(status)}
+              />
+
           </div>
 
           {/* 필터 및 검색 */}
