@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query, getSql, getPool } from '@/db'; // 이전에 만든 query 함수
+import { query, withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { PMSData } from '@/types/data/pms_data';
 import { Vessel } from '@/types/vessel/vessel';
 import { Equipment } from '@/types/vessel/equipment';
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     let vesselNo = process.env.VESSEL;
     if (!vesselNo)
       vesselNo = ''
-    
+
     if (!remoteSiteUrl)
       return NextResponse.json({ success: true });
 
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [vessel]
+         from vessel
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [equipment]
+         from equipment
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [section]
+         from section
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const maintenances: MaintenancePlan[] = await query(
       `select vessel_no
             , equip_no
@@ -111,7 +111,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [maintenance_plan]
+         from maintenance_plan
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const extensions: MaintenanceExtension[] = await query(
       `select vessel_no
             , equip_no
@@ -137,7 +137,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [maintenance_extension]
+         from maintenance_extension
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -145,7 +145,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const works: MaintenanceWork[] = await query(
       `select work_order
             , work_date
@@ -163,7 +163,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [maintenance_work]
+         from maintenance_work
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -171,7 +171,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const usedParts: UsedParts[] = await query(
       `select vessel_no
             , work_order
@@ -184,7 +184,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [used_parts]
+         from used_parts
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -192,7 +192,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const warehouses: Warehouse[] = await query(
       `select vessel_no
             , warehouse_no
@@ -204,7 +204,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [warehouse]
+         from warehouse
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -212,7 +212,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const materials: Material[] = await query(
       `select vessel_no
             , material_code
@@ -229,7 +229,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [material]
+         from material
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -237,7 +237,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const receives: Receive[] = await query(
       `select vessel_no
             , receive_no
@@ -254,7 +254,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [receive]
+         from receive
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -262,7 +262,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const releases: Release[] = await query(
       `select vessel_no
             , release_no
@@ -278,7 +278,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [release]
+         from "release"
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -286,7 +286,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const losses: Loss[] = await query(
       `select vessel_no
             , loss_no
@@ -302,7 +302,7 @@ export async function GET(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [loss]
+         from loss
         where vessel_no = @vesselNo
           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'))`,
@@ -310,7 +310,7 @@ export async function GET(req: Request) {
         { name: 'vesselNo', value: vesselNo }
       ]
     );
-    
+
     const sendPmsData : PMSData = {
       vessel_no: vesselNo,
       last_receive_date: '',
@@ -338,122 +338,76 @@ export async function GET(req: Request) {
     });
 
     if (response.ok) {
-      const sql = await getSql();
-      const pool = await getPool();
-      const transantion = pool.transaction();
-      await transantion.begin();
       try {
-        let queryString = `
-        update [vessel]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
+        await withTransaction(async (client) => {
+          const params: NamedParam[] = [{ name: 'vesselNo', value: vesselNo }];
 
-        let params = [
-          { name: 'vesselNo', value: vesselNo },
-        ];
+          const updates = [
+            `update vessel
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update equipment
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update section
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update maintenance_plan
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update maintenance_extension
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update maintenance_work
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update warehouse
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update material
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update receive
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update "release"
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+            `update loss
+               set last_send_date = now()::timestamp
+             where vessel_no = @vesselNo
+               and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
+               and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`,
+          ];
 
-        const request = new sql.Request(transantion);
-        params?.forEach(p => request.input(p.name, p.value));
-        await request.query(queryString);
-    
-        queryString = `
-        update [equipment]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-
-        await request.query(queryString);
-    
-        queryString = `
-        update [section]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [maintenance_plan]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [maintenance_extension]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [maintenance_work]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [warehouse]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [material]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [receive]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [release]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        queryString = `
-        update [loss]
-           set last_send_date = getdate()
-         where vessel_no = @vesselNo
-           and (regist_date > coalesce(last_send_date, '1900-01-01') or modify_date > coalesce(last_send_date, '1900-01-01'))
-           and (regist_date > coalesce(last_receive_date, '1900-01-01') or modify_date > coalesce(last_receive_date, '1900-01-01'));`;
-           
-        await request.query(queryString);
-    
-        transantion.commit();
-        // 성공 정보 반환
+          for (const queryString of updates) {
+            const { text, values } = adaptNamedParams(queryString, params);
+            await client.query(text, values);
+          }
+        });
         return NextResponse.json({ success: true });
       } catch (err) {
         console.error(err);
-        transantion.rollback();
         return NextResponse.json({ success: false, message: 'Server error!' }, { status: 500 });
       }
     }

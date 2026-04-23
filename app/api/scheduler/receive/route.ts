@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query, getSql, getPool } from '@/db'; // 이전에 만든 query 함수
+import { query, withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { PMSData } from '@/types/data/pms_data';
 
 export async function GET(req: Request) {
@@ -15,41 +15,41 @@ export async function GET(req: Request) {
     const lastReceiveDates: any[] = await query(
       `select max(a.last_receive_date) as last_receive_date
          from (select last_receive_date
-                 from [vessel]
+                 from vessel
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [equipment]
+                 from equipment
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [section]
+                 from section
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [maintenance_plan]
+                 from maintenance_plan
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [maintenance_extension]
+                 from maintenance_extension
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [maintenance_work]
+                 from maintenance_work
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [material]
+                 from material
                 where vessel_no = @vesselNo
-               union all 
+               union all
                select last_receive_date
-                 from [receive]
+                 from receive
                 where vessel_no = @vesselNo) as a`,
       [
         { name: 'vesselNo', value: vesselNo }
       ]
-    ); 
-    
+    );
+
     const sendPmsData : PMSData = {
       vessel_no: vesselNo,
       last_receive_date: lastReceiveDates[0].last_receive_date,
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
 
     if (response.ok) {
       const receivePmsData = await response.json();
-      
+
       const jsonString = JSON.stringify(receivePmsData);
       const sizeInBytes = Buffer.byteLength(jsonString, 'utf8');
       const sizeInKB = (sizeInBytes / 1024).toFixed(2);
@@ -87,16 +87,12 @@ export async function GET(req: Request) {
       // 4. 서버 로그에 크기를 출력합니다.
       console.log(`[Server Log] Response JSON Size: ${sizeInKB} KB (${sizeInMB} MB)`);
 
-      const sql = await getSql();
-      const pool = await getPool();
-      const transantion = pool.transaction();
-      await transantion.begin();
-      try {
+      await withTransaction(async (client) => {
         let count = 0;
         // 선박 정보 등록 및 수정
         for (const item of receivePmsData.vessels) {
-          let queryString = `
-          merge [vessel] as a
+          const queryString = `
+          merge vessel as a
           using (select @vesselNo as vessel_no
                       , @vesselName as vessel_name
                       , @vesselShortName as vessel_short_name
@@ -109,13 +105,13 @@ export async function GET(req: Request) {
             on (a.vessel_no = b.vessel_no)
           when matched then
                 update
-                  set a.vessel_name = b.vessel_name
-                    , a.vessel_short_name = b.vessel_short_name
-                    , a.imo_no = b.imo_no
-                    , a.use_yn = b.use_yn
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set vessel_name = b.vessel_name
+                    , vessel_short_name = b.vessel_short_name
+                    , imo_no = b.imo_no
+                    , use_yn = b.use_yn
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , vessel_name
@@ -130,11 +126,11 @@ export async function GET(req: Request) {
                       , b.vessel_short_name
                       , b.imo_no
                       , b.use_yn
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
+          const params: NamedParam[] = [
             { name: 'vesselNo', value: item.vessel_no },
             { name: 'vesselName', value: item.vessel_name },
             { name: 'vesselShortName', value: item.vessel_short_name },
@@ -146,17 +142,15 @@ export async function GET(req: Request) {
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
 
         // 선박 장비 등록 및 수정
         for (const item of receivePmsData.equipments) {
-          let queryString = `
-          merge [equipment] as a
+          const queryString = `
+          merge equipment as a
           using (select @vesselNo as vessel_no
                       , @equipNo as equip_no
                       , @equipName as equip_name
@@ -171,14 +165,14 @@ export async function GET(req: Request) {
             on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no)
           when matched then
                 update
-                  set a.equip_name = b.equip_name
-                    , a.category = b.category
-                    , a.manufacturer = b.manufacturer
-                    , a.model = b.model
-                    , a.description = b.description
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set equip_name = b.equip_name
+                    , category = b.category
+                    , manufacturer = b.manufacturer
+                    , model = b.model
+                    , description = b.description
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , equip_no
@@ -197,11 +191,11 @@ export async function GET(req: Request) {
                       , b.manufacturer
                       , b.model
                       , b.description
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
+          const params: NamedParam[] = [
             { name: 'vesselNo', value: item.vessel_no },
             { name: 'equipNo', value: item.equip_no },
             { name: 'equipName', value: item.equip_name },
@@ -215,17 +209,15 @@ export async function GET(req: Request) {
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
-        
+
         // 선박 장비의 섹션 등록 및 수정
         for (const item of receivePmsData.sections) {
-          let queryString = `
-          merge [section] as a
+          const queryString = `
+          merge section as a
           using (select @vesselNo as vessel_no
                       , @equipNo as equip_no
                       , @sectionCode as section_code
@@ -238,11 +230,11 @@ export async function GET(req: Request) {
             on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no and a.section_code = b.section_code)
           when matched then
                 update
-                  set a.section_name = b.section_name
-                    , a.description = b.description
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set section_name = b.section_name
+                    , description = b.description
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , equip_no
@@ -257,11 +249,11 @@ export async function GET(req: Request) {
                       , b.section_code
                       , b.section_name
                       , b.description
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
+          const params: NamedParam[] = [
             { name: 'vesselNo', value: item.vessel_no },
             { name: 'equipNo', value: item.equip_no },
             { name: 'sectionCode', value: item.section_code },
@@ -273,17 +265,15 @@ export async function GET(req: Request) {
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
-        
+
         // 선박 정비 등록 및 수정
         for (const item of receivePmsData.maintenances) {
-          let queryString = `
-          merge [maintenance_plan] as a
+          const queryString = `
+          merge maintenance_plan as a
           using (select @vesselNo as vessel_no
                       , @equipNo as equip_no
                       , @sectionCode as section_code
@@ -307,30 +297,30 @@ export async function GET(req: Request) {
                       , @registUser as regist_user
                       , @modifyDate as modify_date
                       , @modifyUser as modify_user) as b
-            on (a.vessel_no = b.vessel_no 
-            and a.equip_no = b.equip_no 
+            on (a.vessel_no = b.vessel_no
+            and a.equip_no = b.equip_no
             and a.section_code = b.section_code
             and a.plan_code = b.plan_code)
           when matched then
                 update
-                   set a.plan_name = b.plan_name
-                     , a.manufacturer = b.manufacturer
-                     , a.model = b.model
-                     , a.specifications = b.specifications
-                     , a.lastest_date = b.lastest_date
-                     , a.workers = b.workers
-                     , a.work_hours = b.work_hours
-                     , a.interval = b.interval
-                     , a.interval_term = b.interval_term
-                     , a.location = b.location
-                     , a.self_maintenance = b.self_maintenance
-                     , a.manager = b.manager
-                     , a.important_items = b.important_items
-                     , a.instructions = b.instructions
-                     , a.critical = b.critical
-                     , a.last_receive_date = getdate()
-                     , a.modify_date = b.modify_date
-                     , a.modify_user = b.modify_user
+                   set plan_name = b.plan_name
+                     , manufacturer = b.manufacturer
+                     , model = b.model
+                     , specifications = b.specifications
+                     , lastest_date = b.lastest_date
+                     , workers = b.workers
+                     , work_hours = b.work_hours
+                     , interval = b.interval
+                     , interval_term = b.interval_term
+                     , location = b.location
+                     , self_maintenance = b.self_maintenance
+                     , manager = b.manager
+                     , important_items = b.important_items
+                     , instructions = b.instructions
+                     , critical = b.critical
+                     , last_receive_date = now()::timestamp
+                     , modify_date = b.modify_date
+                     , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , equip_no
@@ -373,11 +363,11 @@ export async function GET(req: Request) {
                       , b.important_items
                       , b.instructions
                       , b.critical
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
+          const params: NamedParam[] = [
             { name: 'vesselNo', value: item.vessel_no },
             { name: 'equipNo', value: item.equip_no },
             { name: 'sectionCode', value: item.section_code },
@@ -403,17 +393,15 @@ export async function GET(req: Request) {
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
-        
+
         // 선박 정비 연장 등록 및 수정
         for (const item of receivePmsData.extensions) {
-          let queryString = `
-          merge [maintenance_extension] as a
+          const queryString = `
+          merge maintenance_extension as a
           using (select @vesselNo as vessel_no
                       , @equipNo as equip_no
                       , @sectionCode as section_code
@@ -430,23 +418,23 @@ export async function GET(req: Request) {
                       , @registUser as regist_user
                       , @modifyDate as modify_date
                       , @modifyUser as modify_user) as b
-            on (a.vessel_no = b.vessel_no 
-            and a.equip_no = b.equip_no 
+            on (a.vessel_no = b.vessel_no
+            and a.equip_no = b.equip_no
             and a.section_code = b.section_code
             and a.plan_code = b.plan_code
             and a.extension_seq = b.extension_seq)
           when matched then
                 update
-                   set a.extension_date = b.extension_date
-                     , a.extension_reason = b.extension_reason
-                     , a.request_date = b.request_date
-                     , a.applicant = b.applicant
-                     , a.approval_status = b.approval_status
-                     , a.approval_date = b.approval_date
-                     , a.approver = b.approver
-                     , a.last_receive_date = getdate()
-                     , a.modify_date = b.modify_date
-                     , a.modify_user = b.modify_user
+                   set extension_date = b.extension_date
+                     , extension_reason = b.extension_reason
+                     , request_date = b.request_date
+                     , applicant = b.applicant
+                     , approval_status = b.approval_status
+                     , approval_date = b.approval_date
+                     , approver = b.approver
+                     , last_receive_date = now()::timestamp
+                     , modify_date = b.modify_date
+                     , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , equip_no
@@ -475,40 +463,38 @@ export async function GET(req: Request) {
                       , b.approval_status
                       , b.approval_date
                       , b.approver
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
-            { name: 'vesselNo', value: item.vessel_no }, 
-            { name: 'equipNo', value: item.equip_no }, 
-            { name: 'sectionCode', value: item.section_code }, 
-            { name: 'planCode', value: item.plan_code }, 
-            { name: 'extensionSeq', value: item.extension_seq }, 
-            { name: 'extensionDate', value: item.extension_date }, 
-            { name: 'extensionReason', value: item.extension_reason }, 
-            { name: 'requestDate', value: item.request_date }, 
-            { name: 'applicant', value: item.applicant }, 
-            { name: 'approvalStatus', value: item.approval_status }, 
-            { name: 'approvalDate', value: item.approval_date }, 
-            { name: 'approver', value: item.approver }, 
+          const params: NamedParam[] = [
+            { name: 'vesselNo', value: item.vessel_no },
+            { name: 'equipNo', value: item.equip_no },
+            { name: 'sectionCode', value: item.section_code },
+            { name: 'planCode', value: item.plan_code },
+            { name: 'extensionSeq', value: item.extension_seq },
+            { name: 'extensionDate', value: item.extension_date },
+            { name: 'extensionReason', value: item.extension_reason },
+            { name: 'requestDate', value: item.request_date },
+            { name: 'applicant', value: item.applicant },
+            { name: 'approvalStatus', value: item.approval_status },
+            { name: 'approvalDate', value: item.approval_date },
+            { name: 'approver', value: item.approver },
             { name: 'registDate', value: item.regist_date },
             { name: 'registUser', value: item.regist_user },
             { name: 'modifyDate', value: item.modify_date },
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
 
         // 선박의 부품 등록 및 수정
         for (const item of receivePmsData.materials) {
-          let queryString = `
-          merge [material] as a
+          const queryString = `
+          merge material as a
           using (select @vesselNo as vessel_no
                       , @materialCode as material_code
                       , @machineName as machine_name
@@ -524,22 +510,22 @@ export async function GET(req: Request) {
                       , @registUser as regist_user
                       , @modifyDate as modify_date
                       , @modifyUser as modify_user) as b
-              on (a.vessel_no = b.vessel_no 
+              on (a.vessel_no = b.vessel_no
               and a.material_code = b.material_code)
             when matched then
                 update
-                   set a.machine_name = b.machine_name
-                     , a.material_name = b.material_name
-                     , a.material_group = b.material_group
-                     , a.material_spec = b.material_spec
-                     , a.material_type = b.material_type
-                     , a.material_unit = b.material_unit
-                     , a.warehouse_no = b.warehouse_no
-                     , a.drawing_no = b.drawing_no
-                     , a.standard_qty = b.standard_qty
-                     , a.last_receive_date = getdate()
-                     , a.modify_date = b.modify_date
-                     , a.modify_user = b.modify_user
+                   set machine_name = b.machine_name
+                     , material_name = b.material_name
+                     , material_group = b.material_group
+                     , material_spec = b.material_spec
+                     , material_type = b.material_type
+                     , material_unit = b.material_unit
+                     , warehouse_no = b.warehouse_no
+                     , drawing_no = b.drawing_no
+                     , standard_qty = b.standard_qty
+                     , last_receive_date = now()::timestamp
+                     , modify_date = b.modify_date
+                     , modify_user = b.modify_user
             when not matched then
                 insert (vessel_no
                       , material_code
@@ -566,40 +552,38 @@ export async function GET(req: Request) {
                       , b.warehouse_no
                       , b.drawing_no
                       , b.standard_qty
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
-            { name: 'vesselNo', value: item.vessel_no }, 
-            { name: 'materialCode', value: item.material_code }, 
-            { name: 'machineName', value: item.machine_name }, 
-            { name: 'materialName', value: item.material_name }, 
-            { name: 'materialGroup', value: item.material_group }, 
-            { name: 'materialSpec', value: item.material_spec }, 
-            { name: 'materialType', value: item.material_type }, 
-            { name: 'materialUnit', value: item.material_unit }, 
-            { name: 'warehouseNo', value: item.warehouse_no }, 
-            { name: 'drawingNo', value: item.drawing_no }, 
-            { name: 'standardQty', value: item.standard_qty }, 
-            { name: 'initialStock', value: item.initial_stock }, 
+          const params: NamedParam[] = [
+            { name: 'vesselNo', value: item.vessel_no },
+            { name: 'materialCode', value: item.material_code },
+            { name: 'machineName', value: item.machine_name },
+            { name: 'materialName', value: item.material_name },
+            { name: 'materialGroup', value: item.material_group },
+            { name: 'materialSpec', value: item.material_spec },
+            { name: 'materialType', value: item.material_type },
+            { name: 'materialUnit', value: item.material_unit },
+            { name: 'warehouseNo', value: item.warehouse_no },
+            { name: 'drawingNo', value: item.drawing_no },
+            { name: 'standardQty', value: item.standard_qty },
+            { name: 'initialStock', value: item.initial_stock },
             { name: 'registDate', value: item.regist_date },
             { name: 'registUser', value: item.regist_user },
             { name: 'modifyDate', value: item.modify_date },
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
 
-        // 선박의 부풉 입고 등록 및 수정
+        // 선박의 부품 입고 등록 및 수정
         for (const item of receivePmsData.receives) {
-          let queryString = `
-          merge [receive] as a
+          const queryString = `
+          merge receive as a
           using (select @vesselNo as vessel_no
                       , @receiveNo as receive_no
                       , @materialCode as material_code
@@ -614,21 +598,21 @@ export async function GET(req: Request) {
                       , @registUser as regist_user
                       , @modifyDate as modify_date
                       , @modifyUser as modify_user) as b
-              on (a.vessel_no = b.vessel_no 
+              on (a.vessel_no = b.vessel_no
               and a.receive_no = b.receive_no)
             when matched then
                 update
-                   set a.material_code = b.material_code
-                     , a.receive_date = b.receive_date
-                     , a.delivery_location = b.delivery_location
-                     , a.receive_type = b.receive_type
-                     , a.receive_unit = b.receive_unit
-                     , a.receive_qty = b.receive_qty
-                     , a.receive_location = b.receive_location
-                     , a.receive_remark = b.receive_remark
-                     , a.last_receive_date = getdate()
-                     , a.modify_date = b.modify_date
-                     , a.modify_user = b.modify_user
+                   set material_code = b.material_code
+                     , receive_date = b.receive_date
+                     , delivery_location = b.delivery_location
+                     , receive_type = b.receive_type
+                     , receive_unit = b.receive_unit
+                     , receive_qty = b.receive_qty
+                     , receive_location = b.receive_location
+                     , receive_remark = b.receive_remark
+                     , last_receive_date = now()::timestamp
+                     , modify_date = b.modify_date
+                     , modify_user = b.modify_user
             when not matched then
                 insert (vessel_no
                       , receive_no
@@ -653,41 +637,36 @@ export async function GET(req: Request) {
                       , b.receive_qty
                       , b.receive_location
                       , b.receive_remark
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_date
                       , b.regist_user);`;
 
-          let params = [
-            { name: 'vesselNo', value: item.vessel_no }, 
-            { name: 'receiveNo', value: item.receive_no }, 
-            { name: 'materialCode', value: item.material_code }, 
-            { name: 'receiveDate', value: item.receive_date }, 
-            { name: 'deliveryLocation', value: item.delivery_location }, 
-            { name: 'receiveType', value: item.receive_type }, 
-            { name: 'receiveUnit', value: item.receive_unit }, 
-            { name: 'receiveQty', value: item.receive_qty }, 
-            { name: 'receiveLocation', value: item.receive_location }, 
-            { name: 'receiveRemark', value: item.receive_remark }, 
+          const params: NamedParam[] = [
+            { name: 'vesselNo', value: item.vessel_no },
+            { name: 'receiveNo', value: item.receive_no },
+            { name: 'materialCode', value: item.material_code },
+            { name: 'receiveDate', value: item.receive_date },
+            { name: 'deliveryLocation', value: item.delivery_location },
+            { name: 'receiveType', value: item.receive_type },
+            { name: 'receiveUnit', value: item.receive_unit },
+            { name: 'receiveQty', value: item.receive_qty },
+            { name: 'receiveLocation', value: item.receive_location },
+            { name: 'receiveRemark', value: item.receive_remark },
             { name: 'registDate', value: item.regist_date },
             { name: 'registUser', value: item.regist_user },
             { name: 'modifyDate', value: item.modify_date },
             { name: 'modifyUser', value: item.modify_user },
           ];
 
-          const request = new sql.Request(transantion);
-
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          count += result.rowsAffected[0];
+          const { text, values } = adaptNamedParams(queryString, params);
+          const result = await client.query(text, values);
+          count += result.rowCount ?? 0;
         }
 
-        transantion.commit();
-        // 성공 정보 반환
-        return NextResponse.json({ success: true });
-      } catch (err) {
-        transantion.rollback();
-        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-      }
+        return count;
+      });
+      // 성공 정보 반환
+      return NextResponse.json({ success: true });
     }
     else {
       throw new Error(`HTTP error! status: ${response.status}`);

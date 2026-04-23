@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [equipment] (
+      `insert into equipment (
                vessel_no
              , equip_no
              , equip_name
@@ -22,13 +22,13 @@ export async function POST(req: Request) {
        )
        values (
                @vesselNo
-             , (select format(isnull(max(equip_no), 0) + 1, '00') from [equipment] where vessel_no = @vesselNo)
+             , (select lpad((coalesce(max(equip_no), 0) + 1)::text, 2, '0') from equipment where vessel_no = @vesselNo)
              , @equipName
              , @category
              , @manufacturer
              , @model
              , @description
-             , getdate()
+             , now()::timestamp
              , @registUser
        );`,
       [

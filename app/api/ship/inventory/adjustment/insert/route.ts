@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     // DB에서 사용자 정보 확인
     if (item.adjustment_type === 'AI') {
       const count = await execute(
-        `insert into [receive] (
+        `insert into receive (
                 vessel_no
               , receive_no
               , material_code
@@ -26,8 +26,8 @@ export async function POST(req: Request) {
         )
         values (
                 @vesselNo
-              , (select @adjustmentType + format(getdate(), 'yyMM') + format(isnull(right(max(receive_no), 3), 0) + 1, '000') 
-                   from [receive] 
+              , (select @adjustmentType || to_char(now(), 'YYMM') || lpad((coalesce(right(max(receive_no), 3)::int, 0) + 1)::text, 3, '0')
+                   from receive
                   where vessel_no = @vesselNo
                     and receive_type = @adjustmentType)
               , @materialCode
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
               , @adjustmentQty
               , @adjustmentLocation
               , @adjustmentReason
-              , getdate()
+              , now()::timestamp
               , @registUser
         );`,
         [
@@ -70,10 +70,10 @@ export async function POST(req: Request) {
               , receive_reason as adjustment_reason
               , regist_date
               , regist_user
-          from [receive]
+          from receive
           where vessel_no = @vesselNo
-            and receive_no = (select max(receive_no) 
-                                from [receive]
+            and receive_no = (select max(receive_no)
+                                from receive
                                where vessel_no = @vesselNo
                                  and receive_type = @adjustmentType
                                  and regist_user = @registUser);`,
@@ -98,8 +98,8 @@ export async function POST(req: Request) {
           if (res.ok) {
             // 창고 정보의 마지막 전송일자 수정
             execute(
-              `update [release]
-                  set last_send_date = getdate()
+              `update "release"
+                  set last_send_date = now()::timestamp
                 where vessel_no = @vesselNo
                   and release_no = @adjustmentNo;`,
               [
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
               ]
             );
           }
-          
+
           return res.json();
         })
         .catch(err => {
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
       }
     } else {
       const count = await execute(
-        `insert into [release] (
+        `insert into "release" (
                 vessel_no
               , release_no
               , material_code
@@ -132,8 +132,8 @@ export async function POST(req: Request) {
         )
         values (
                 @vesselNo
-              , (select @adjustmentType + format(getdate(), 'yyMM') + format(isnull(right(max(release_no), 3), 0) + 1, '000') 
-                   from [release] 
+              , (select @adjustmentType || to_char(now(), 'YYMM') || lpad((coalesce(right(max(release_no), 3)::int, 0) + 1)::text, 3, '0')
+                   from "release"
                   where vessel_no = @vesselNo
                     and release_type = @adjustmentType)
               , @materialCode
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
               , @adjustmentQty
               , @adjustmentLocation
               , @adjustmentReason
-              , getdate()
+              , now()::timestamp
               , @registUser
         );`,
         [
@@ -176,10 +176,10 @@ export async function POST(req: Request) {
               , release_reason as adjustment_reason
               , regist_date
               , regist_user
-           from [release]
+           from "release"
           where vessel_no = @vesselNo
-            and release_no = (select max(release_no) 
-                                from [release]
+            and release_no = (select max(release_no)
+                                from "release"
                                where vessel_no = @vesselNo
                                  and release_type = @adjustmentType
                                  and regist_user = @registUser);`,
@@ -204,8 +204,8 @@ export async function POST(req: Request) {
           if (res.ok) {
             // 창고 정보의 마지막 전송일자 수정
             execute(
-              `update [release]
-                  set last_send_date = getdate()
+              `update "release"
+                  set last_send_date = now()::timestamp
                 where vessel_no = @vesselNo
                   and release_no = @adjustmentNo;`,
               [

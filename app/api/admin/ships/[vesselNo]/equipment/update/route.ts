@@ -9,13 +9,13 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `update [equipment]
+      `update equipment
           set equip_name = @equipName
             , category = @category
             , manufacturer = @manufacturer
             , model = @model
             , description = @description
-            , modify_date = getdate()
+            , modify_date = now()::timestamp
             , modify_user = @modifyUser
         where vessel_no = @vesselNo 
           and equip_no = @equipNo;`,

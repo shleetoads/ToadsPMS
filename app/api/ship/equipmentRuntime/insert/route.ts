@@ -44,12 +44,12 @@ export async function POST(req: Request) {
     }
     
     await query(
-      `EXEC dbo.usp_upsert_equipment_runtime
+      `CALL usp_upsert_equipment_runtime(
             @vessel_no,
             @machine_name,
             @equip_no,
             @equip_name,
-            @runtime`,
+            @runtime)`,
       [
         { name: 'vessel_no', value: vessel_no },
         { name: 'machine_name', value: machine_name },

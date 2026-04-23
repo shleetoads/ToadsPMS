@@ -15,8 +15,8 @@ export async function GET(req: Request) {
             , b.material_code
             , b.material_name
             , b.material_unit
-            , isnull(d.location, '') as location
-            , isnull(e.warehouse_name, '') as location_name
+            , coalesce(d.location, '') as location
+            , coalesce(e.warehouse_name, '') as location_name
             , d.stock_qty
          from vessel as a
          left outer join material as b
@@ -28,25 +28,25 @@ export async function GET(req: Request) {
                             from (select vessel_no
                                        , material_code
                                        , receive_type as type
-                                       , isnull(receive_location, '') as location
+                                       , coalesce(receive_location, '') as location
                                        , receive_qty as qty
-                                    from [receive]
+                                    from receive
                                    where vessel_no = @vesselNo
                                   union all
                                   select vessel_no
                                        , material_code
                                        , release_type
-                                       , isnull(release_location, '')
+                                       , coalesce(release_location, '')
                                        , release_qty as receive_qty
-                                    from [release]
+                                    from "release"
                                    where vessel_no = @vesselNo
                                   union all
                                   select vessel_no
                                        , material_code
                                        , loss_type
-                                       , isnull(loss_location, '')
+                                       , coalesce(loss_location, '')
                                        , loss_qty as receive_qty
-                                    from [loss]
+                                    from loss
                                    where vessel_no = @vesselNo) as a1
                            group by a1.vessel_no
                                   , a1.material_code

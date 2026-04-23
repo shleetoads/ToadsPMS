@@ -31,7 +31,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [vessel]
+         from vessel
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [machine]
+         from machine
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [equipment]
+         from equipment
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [section]
+         from section
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [maintenance_plan]
+         from maintenance_plan
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [maintenance_extension]
+         from maintenance_extension
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [material]
+         from material
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)`,
       [
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
             , regist_user
             , modify_date
             , modify_user
-         from [receive]
+         from receive
         where vessel_no = @vesselNo
           and (regist_date >= @lastReceiveDate or modify_date >= @lastReceiveDate)
           and receive_type = 'S0'`,

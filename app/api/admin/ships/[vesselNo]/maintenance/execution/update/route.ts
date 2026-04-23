@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool, query, execute } from '@/db'; // 이전에 만든 query 함수
+import { withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { MaintenanceWork } from '@/types/vessel/maintenance_work';
 
 export async function POST(req: Request) {
@@ -7,104 +7,89 @@ export async function POST(req: Request) {
     const body = await req.json();
     const item : MaintenanceWork = body;
 
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-    try {
-
-      let count = 0;
+    const count = await withTransaction(async (client) => {
+      let total = 0;
       let queryString = `
-      update [maintenance_plan]
+      update maintenance_plan
          set lastest_date = @workDate
-           , modify_date = getdate()
+           , modify_date = now()::timestamp
            , modify_user = @modifyUser
        where vessel_no = @vesselNo
          and equip_no = @equipNo
          and section_code = @sectionCode
          and plan_code = @planCode
          and lastest_date = (select work_date
-                               from [maintenance_work]
+                               from maintenance_work
                               where vessel_no = @vesselNo
                                 and work_order = @workOrder);`;
-      
-      let params = [
-        { name: 'vesselNo', value: item.vessel_no }, 
-        { name: 'equipNo', value: item.equip_no }, 
-        { name: 'sectionCode', value: item.section_code }, 
-        { name: 'planCode', value: item.plan_code }, 
-        { name: 'workOrder', value: item.work_order.toString() }, 
-        { name: 'workDate', value: item.work_date }, 
-        { name: 'registUser', value: item.regist_user }, 
-        { name: 'modifyUser', value: item.modify_user }, 
+
+      let params: NamedParam[] = [
+        { name: 'vesselNo', value: item.vessel_no },
+        { name: 'equipNo', value: item.equip_no },
+        { name: 'sectionCode', value: item.section_code },
+        { name: 'planCode', value: item.plan_code },
+        { name: 'workOrder', value: item.work_order.toString() },
+        { name: 'workDate', value: item.work_date },
+        { name: 'registUser', value: item.regist_user },
+        { name: 'modifyUser', value: item.modify_user },
       ];
 
-      let request = new sql.Request(transantion);
-      
-      params?.forEach(p => request.input(p.name, p.value));
-      let result = await request.query(queryString);
+      let { text, values } = adaptNamedParams(queryString, params);
+      let result = await client.query(text, values);
 
       queryString = `
-      update [equipment]
+      update equipment
          set lastest_date = @workDate
-           , modify_date = getdate()
+           , modify_date = now()::timestamp
            , modify_user = @modifyUser
        where vessel_no = @vesselNo
          and equip_no = @equipNo
          and lastest_date = (select work_date
-                               from [maintenance_work]
+                               from maintenance_work
                               where vessel_no = @vesselNo
                                 and work_order = @workOrder);`;
-      
+
       params = [
-        { name: 'vesselNo', value: item.vessel_no }, 
-        { name: 'equipNo', value: item.equip_no }, 
-        { name: 'workOrder', value: item.work_order.toString() }, 
-        { name: 'workDate', value: item.work_date }, 
-        { name: 'registUser', value: item.regist_user }, 
-        { name: 'modifyUser', value: item.modify_user }, 
+        { name: 'vesselNo', value: item.vessel_no },
+        { name: 'equipNo', value: item.equip_no },
+        { name: 'workOrder', value: item.work_order.toString() },
+        { name: 'workDate', value: item.work_date },
+        { name: 'registUser', value: item.regist_user },
+        { name: 'modifyUser', value: item.modify_user },
       ];
 
-      request = new sql.Request(transantion);
-      
-      params?.forEach(p => request.input(p.name, p.value));
-      result = await request.query(queryString);
+      ({ text, values } = adaptNamedParams(queryString, params));
+      result = await client.query(text, values);
 
       queryString = `
-      update [maintenance_work]
+      update maintenance_work
          set work_date = @workDate
            , modify_user = @modifyUser
-           , modify_date = getdate()
+           , modify_date = now()::timestamp
        where vessel_no = @vesselNo
          and work_order = @workOrder;`;
 
       params = [
-        { name: 'vesselNo', value: item.vessel_no }, 
-        { name: 'workOrder', value: item.work_order.toString() }, 
-        { name: 'workDate', value: item.work_date }, 
-        { name: 'registUser', value: item.regist_user }, 
-        { name: 'modifyUser', value: item.modify_user }, 
+        { name: 'vesselNo', value: item.vessel_no },
+        { name: 'workOrder', value: item.work_order.toString() },
+        { name: 'workDate', value: item.work_date },
+        { name: 'registUser', value: item.regist_user },
+        { name: 'modifyUser', value: item.modify_user },
       ];
 
-      request = new sql.Request(transantion);
+      ({ text, values } = adaptNamedParams(queryString, params));
+      result = await client.query(text, values);
+      total += result.rowCount ?? 0;
 
-      params?.forEach(p => request.input(p.name, p.value));
-      result = await request.query(queryString);
-      count += result.rowsAffected[0];
+      return total;
+    });
 
-      transantion.commit();
-
-      if (count === 0) {
-        return NextResponse.json({ success: false, message: 'Data was not updated.' }, { status: 401 });
-      }
-
-      // 성공 정보 반환
-      return NextResponse.json({ success: true });
-    } catch (err) {
-      transantion.rollback();
-      console.error(err);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    if (count === 0) {
+      return NextResponse.json({ success: false, message: 'Data was not updated.' }, { status: 401 });
     }
+
+    // 성공 정보 반환
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

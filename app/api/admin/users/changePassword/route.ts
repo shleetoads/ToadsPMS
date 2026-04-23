@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `update [user]
+      `update "user"
           set password = convert(varbinary(MAX), @password)
         where account_no = @accountNo;`,
       [

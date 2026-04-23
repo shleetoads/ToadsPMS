@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool } from '@/db'; // 이전에 만든 query 함수
+import { withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { PMSData } from '@/types/data/pms_data';
 
 export async function POST(req: Request) {
@@ -10,18 +10,13 @@ export async function POST(req: Request) {
 
   try {
     // DB에서 정보 확인
-    
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-    try {
+    await withTransaction(async (client) => {
       let count = 0;
       
       // 선박 정보 등록 및 수정
       for (const item of receivePmsData.vessels) {
         let queryString = `
-        merge [vessel] as a
+        merge vessel as a
         using (select @vesselNo as vessel_no
                     , @vesselName as vessel_name
                     , @vesselShortName as vessel_short_name
@@ -34,13 +29,13 @@ export async function POST(req: Request) {
            on (a.vessel_no = b.vessel_no)
          when matched then
               update
-                 set a.vessel_name = b.vessel_name
-                   , a.vessel_short_name = b.vessel_short_name
-                   , a.imo_no = b.imo_no
-                   , a.use_yn = b.use_yn
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set vessel_name = b.vessel_name
+                   , vessel_short_name = b.vessel_short_name
+                   , imo_no = b.imo_no
+                   , use_yn = b.use_yn
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
          when not matched then
               insert (vessel_no
                     , vessel_name
@@ -55,7 +50,7 @@ export async function POST(req: Request) {
                     , b.vessel_short_name
                     , b.imo_no
                     , b.use_yn
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -71,17 +66,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 기계 등록 및 수정
       for (const item of receivePmsData.machines) {
         let queryString = `
-        merge [machine] as a
+        merge machine as a
         using (select @vesselNo as vessel_no
                     , @machineName as machine_name
                     , @manufacturer as manufacturer
@@ -94,13 +87,13 @@ export async function POST(req: Request) {
           on (a.vessel_no = b.vessel_no and a.machineName = b.machineName)
         when matched then
               update
-                 set a.machine_name = b.machine_name
-                   , a.manufacturer = b.manufacturer
-                   , a.machine_desc = b.machine_desc
-                   , a.sort_no = b.sort_no
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set machine_name = b.machine_name
+                   , manufacturer = b.manufacturer
+                   , machine_desc = b.machine_desc
+                   , sort_no = b.sort_no
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , machine_name
@@ -115,7 +108,7 @@ export async function POST(req: Request) {
                     , b.manufacturer
                     , b.machine_desc
                     , b.sort_no
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -131,17 +124,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 장비 등록 및 수정
       for (const item of receivePmsData.equipments) {
         let queryString = `
-        merge [equipment] as a
+        merge equipment as a
         using (select @vesselNo as vessel_no
                     , @equipNo as equip_no
                     , @equipName as equip_name
@@ -157,15 +148,15 @@ export async function POST(req: Request) {
           on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no)
         when matched then
               update
-                 set a.equip_name = b.equip_name
-                   , a.machine_name = b.machine_name
-                   , a.category = b.category
-                   , a.manufacturer = b.manufacturer
-                   , a.model = b.model
-                   , a.description = b.description
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set equip_name = b.equip_name
+                   , machine_name = b.machine_name
+                   , category = b.category
+                   , manufacturer = b.manufacturer
+                   , model = b.model
+                   , description = b.description
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , equip_no
@@ -186,7 +177,7 @@ export async function POST(req: Request) {
                     , b.manufacturer
                     , b.model
                     , b.description
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -205,17 +196,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
       
       // 선박 장비의 섹션 등록 및 수정
       for (const item of receivePmsData.sections) {
         let queryString = `
-        merge [section] as a
+        merge section as a
         using (select @vesselNo as vessel_no
                     , @equipNo as equip_no
                     , @sectionCode as section_code
@@ -228,11 +217,11 @@ export async function POST(req: Request) {
            on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no and a.section_code = b.section_code)
          when matched then
               update
-                 set a.section_name = b.section_name
-                   , a.description = b.description
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set section_name = b.section_name
+                   , description = b.description
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
          when not matched then
               insert (vessel_no
                     , equip_no
@@ -247,7 +236,7 @@ export async function POST(req: Request) {
                     , b.section_code
                     , b.section_name
                     , b.description
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -263,17 +252,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
       
       // 선박 정비 등록 및 수정
       for (const item of receivePmsData.maintenances) {
         let queryString = `
-        merge [maintenance_plan] as a
+        merge maintenance_plan as a
         using (select @vesselNo as vessel_no
                     , @equipNo as equip_no
                     , @sectionCode as section_code
@@ -303,24 +290,24 @@ export async function POST(req: Request) {
           and a.plan_code = b.plan_code)
         when matched then
               update
-                 set a.plan_name = b.plan_name
-                   , a.manufacturer = b.manufacturer
-                   , a.model = b.model
-                   , a.specifications = b.specifications
-                   , a.lastest_date = b.lastest_date
-                   , a.workers = b.workers
-                   , a.work_hours = b.work_hours
-                   , a.interval = b.interval
-                   , a.interval_term = b.interval_term
-                   , a.location = b.location
-                   , a.self_maintenance = b.self_maintenance
-                   , a.manager = b.manager
-                   , a.important_items = b.important_items
-                   , a.instructions = b.instructions
-                   , a.critical = b.critical
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set plan_name = b.plan_name
+                   , manufacturer = b.manufacturer
+                   , model = b.model
+                   , specifications = b.specifications
+                   , lastest_date = b.lastest_date
+                   , workers = b.workers
+                   , work_hours = b.work_hours
+                   , interval = b.interval
+                   , interval_term = b.interval_term
+                   , location = b.location
+                   , self_maintenance = b.self_maintenance
+                   , manager = b.manager
+                   , important_items = b.important_items
+                   , instructions = b.instructions
+                   , critical = b.critical
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , equip_no
@@ -363,7 +350,7 @@ export async function POST(req: Request) {
                     , b.important_items
                     , b.instructions
                     , b.critical
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -393,17 +380,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
       
       // 선박 정비 연장 등록 및 수정
       for (const item of receivePmsData.extensions) {
         let queryString = `
-        merge [maintenance_extension] as a
+        merge maintenance_extension as a
         using (select @vesselNo as vessel_no
                     , @equipNo as equip_no
                     , @sectionCode as section_code
@@ -427,16 +412,16 @@ export async function POST(req: Request) {
           and a.extension_seq = b.extension_seq)
         when matched then
               update
-                 set a.extension_date = b.extension_date
-                   , a.extension_reason = b.extension_reason
-                   , a.request_date = b.request_date
-                   , a.applicant = b.applicant
-                   , a.approval_status = b.approval_status
-                   , a.approval_date = b.approval_date
-                   , a.approver = b.approver
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set extension_date = b.extension_date
+                   , extension_reason = b.extension_reason
+                   , request_date = b.request_date
+                   , applicant = b.applicant
+                   , approval_status = b.approval_status
+                   , approval_date = b.approval_date
+                   , approver = b.approver
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , equip_no
@@ -465,7 +450,7 @@ export async function POST(req: Request) {
                     , b.approval_status
                     , b.approval_date
                     , b.approver
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -488,17 +473,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
       
       // 선박 정비 작업 등록 및 수정
       for (const item of receivePmsData.works) {
         let queryString = `
-        merge [maintenance_work] as a
+        merge maintenance_work as a
         using (select @vesselNo as vessel_no
                     , @workOrder as work_order
                     , @workDate as work_date
@@ -519,18 +502,18 @@ export async function POST(req: Request) {
           and a.work_order = b.work_order)
         when matched then
               update
-                 set a.work_date = b.work_date
-                   , a.manager = b.manager
-                   , a.work_details = b.work_details
-                   , a.used_parts = b.used_parts
-                   , a.work_hours = b.work_hours
-                   , a.delay_reason = b.delay_reason
-                   , a.plan_date = b.plan_date
-                   , a.equip_no = b.equip_no
-                   , a.section_code = b.section_code
-                   , a.plan_code = b.plan_code
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set work_date = b.work_date
+                   , manager = b.manager
+                   , work_details = b.work_details
+                   , used_parts = b.used_parts
+                   , work_hours = b.work_hours
+                   , delay_reason = b.delay_reason
+                   , plan_date = b.plan_date
+                   , equip_no = b.equip_no
+                   , section_code = b.section_code
+                   , plan_code = b.plan_code
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (work_order
                     , work_date
@@ -559,7 +542,7 @@ export async function POST(req: Request) {
                     , b.equip_no
                     , b.section_code
                     , b.plan_code
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -582,17 +565,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
       
       // 선박 정비 작업에 사용 부품 등록 및 수정
       for (const item of receivePmsData.usedParts) {
         let queryString = `
-        merge [used_parts] as a
+        merge used_parts as a
         using (select @vesselNo as vessel_no
                     , @workOrder as work_order
                     , @partSeq as part_seq
@@ -609,13 +590,13 @@ export async function POST(req: Request) {
           and a.part_seq = b.part_seq)
         when matched then
               update
-                 set a.warehouse_no = b.warehouse_no
-                   , a.material_code = b.material_code
-                   , a.use_unit = b.use_unit
-                   , a.use_qty = b.use_qty
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set warehouse_no = b.warehouse_no
+                   , material_code = b.material_code
+                   , use_unit = b.use_unit
+                   , use_qty = b.use_qty
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , work_order
@@ -634,7 +615,7 @@ export async function POST(req: Request) {
                     , b.material_code
                     , b.use_unit
                     , b.use_qty
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -652,17 +633,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 창고 등록 및 수정
       for (const item of receivePmsData.warehouses) {
         let queryString = `
-        merge [warehouse] as a
+        merge warehouse as a
         using (select @vesselNo as vessel_no
                     , @warehouseNo as warehouse_no
                     , @warehouseName as warehouse_name
@@ -676,12 +655,12 @@ export async function POST(req: Request) {
           and a.warehouseNo = b.warehouseNo)
          when matched then
               update
-                 set a.warehouse_name = b.warehouse_name
-                   , a.warehouse_location = b.warehouse_location
-                   , a.use_yn = b.use_yn
-                   , a.last_receive_date = getdate()
-                   , a.modify_date = b.modify_date
-                   , a.modify_user = b.modify_user
+                 set warehouse_name = b.warehouse_name
+                   , warehouse_location = b.warehouse_location
+                   , use_yn = b.use_yn
+                   , last_receive_date = now()::timestamp
+                   , modify_date = b.modify_date
+                   , modify_user = b.modify_user
          when not matched then
               insert (vessel_no
                     , warehouse_no
@@ -696,7 +675,7 @@ export async function POST(req: Request) {
                     , b.warehouse_name
                     , b.warehouse_location
                     , b.use_yn
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -712,17 +691,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 자재 등록 및 수정
       for (const item of receivePmsData.materials) {
         let queryString = `
-        merge [material] as a
+        merge material as a
         using (select @vesselNo as vessel_no
                     , @materialCode as material_code
                     , @machineName as machine_name
@@ -742,18 +719,18 @@ export async function POST(req: Request) {
             and a.material_code = b.material_code)
           when matched then
               update
-                  set a.machine_name = b.machine_name
-                    , a.material_name = b.material_name
-                    , a.material_group = b.material_group
-                    , a.material_spec = b.material_spec
-                    , a.material_type = b.material_type
-                    , a.material_unit = b.material_unit
-                    , a.warehouse_no = b.warehouse_no
-                    , a.drawing_no = b.drawing_no
-                    , a.standard_qty = b.standard_qty
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set machine_name = b.machine_name
+                    , material_name = b.material_name
+                    , material_group = b.material_group
+                    , material_spec = b.material_spec
+                    , material_type = b.material_type
+                    , material_unit = b.material_unit
+                    , warehouse_no = b.warehouse_no
+                    , drawing_no = b.drawing_no
+                    , standard_qty = b.standard_qty
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
               insert (vessel_no
                     , material_code
@@ -780,7 +757,7 @@ export async function POST(req: Request) {
                     , b.warehouse_no
                     , b.drawing_no
                     , b.standard_qty
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -803,17 +780,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 입고 등록 및 수정
       for (const item of receivePmsData.receives) {
         let queryString = `
-        merge [receive] as a
+        merge receive as a
         using (select @vesselNo as vessel_no
                     , @receiveNo as receive_no
                     , @materialCode as material_code
@@ -832,17 +807,17 @@ export async function POST(req: Request) {
             and a.receive_no = b.receive_no)
           when matched then
               update
-                  set a.material_code = b.material_code
-                    , a.receive_date = b.receive_date
-                    , a.delivery_location = b.delivery_location
-                    , a.receive_type = b.receive_type
-                    , a.receive_unit = b.receive_unit
-                    , a.receive_qty = b.receive_qty
-                    , a.receive_location = b.receive_location
-                    , a.receive_remark = b.receive_remark
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set material_code = b.material_code
+                    , receive_date = b.receive_date
+                    , delivery_location = b.delivery_location
+                    , receive_type = b.receive_type
+                    , receive_unit = b.receive_unit
+                    , receive_qty = b.receive_qty
+                    , receive_location = b.receive_location
+                    , receive_remark = b.receive_remark
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
               insert (vessel_no
                     , receive_no
@@ -867,7 +842,7 @@ export async function POST(req: Request) {
                     , b.receive_qty
                     , b.receive_location
                     , b.receive_remark
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -888,17 +863,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 출고 등록 및 수정
       for (const item of receivePmsData.releases) {
         let queryString = `
-        merge [release] as a
+        merge "release" as a
         using (select @vesselNo as vessel_no
                     , @releaseNo as release_no
                     , @materialCode as material_code
@@ -917,17 +890,17 @@ export async function POST(req: Request) {
             and a.release_no = b.release_no)
           when matched then
               update
-                  set a.material_code = b.material_code
-                    , a.release_date = b.release_date
-                    , a.release_type = b.release_type
-                    , a.release_unit = b.release_unit
-                    , a.release_qty = b.release_qty
-                    , a.release_location = b.release_location
-                    , a.release_remark = b.release_remark
-                    , a.release_reason = b.release_reason
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set material_code = b.material_code
+                    , release_date = b.release_date
+                    , release_type = b.release_type
+                    , release_unit = b.release_unit
+                    , release_qty = b.release_qty
+                    , release_location = b.release_location
+                    , release_remark = b.release_remark
+                    , release_reason = b.release_reason
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
               insert (vessel_no
                     , release_no
@@ -952,7 +925,7 @@ export async function POST(req: Request) {
                     , b.release_location
                     , b.release_remark
                     , b.release_reason
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -973,17 +946,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
       // 선박 출고 등록 및 수정
       for (const item of receivePmsData.losses) {
         let queryString = `
-        merge [loss] as a
+        merge loss as a
         using (select @vesselNo as vessel_no
                     , @lossNo as loss_no
                     , @materialCode as material_code
@@ -1001,16 +972,16 @@ export async function POST(req: Request) {
             and a.loss_no = b.loss_no)
           when matched then
               update
-                  set a.material_code = b.material_code
-                    , a.loss_date = b.loss_date
-                    , a.loss_type = b.loss_type
-                    , a.loss_unit = b.loss_unit
-                    , a.loss_qty = b.loss_qty
-                    , a.loss_location = b.loss_location
-                    , a.loss_reason = b.loss_reason
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set material_code = b.material_code
+                    , loss_date = b.loss_date
+                    , loss_type = b.loss_type
+                    , loss_unit = b.loss_unit
+                    , loss_qty = b.loss_qty
+                    , loss_location = b.loss_location
+                    , loss_reason = b.loss_reason
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
               insert (vessel_no
                     , loss_no
@@ -1033,7 +1004,7 @@ export async function POST(req: Request) {
                     , b.loss_qty
                     , b.loss_location
                     , b.loss_reason
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
                     , b.regist_user);`;
 
@@ -1053,21 +1024,15 @@ export async function POST(req: Request) {
           { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params as NamedParam[]);
+        const result = await client.query(text, values);
+        count += result.rowCount ?? 0;
       }
 
-      transantion.commit();
-      // 성공 정보 반환
-      return NextResponse.json({ success: true });
-    } catch (err) {
-      transantion.rollback();
-      console.error(err);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-    }
+      return count;
+    });
+    // 성공 정보 반환
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

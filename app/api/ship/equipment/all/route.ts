@@ -19,19 +19,19 @@ export async function GET(req: Request) {
             , a.specifications
             , a.description
             , a.lastest_date
-            , min(convert(varchar(10), b.due_date, 121)) as due_date
+            , min(to_char(b.due_date, 'YYYY-MM-DD')) as due_date
             , count(b.plan_code) as maintenance_count
             , (select count(1) from section where vessel_no = a.vessel_no and equip_no = a.equip_no) as section_count
-         from [equipment] as a
+         from equipment as a
          left outer join (select a1.vessel_no
                                , a1.equip_no
                                , a1.section_code
                                , a1.plan_code
-                               , case a1.interval_term when 'YEAR' then dateadd(year, a1.interval, a1.lastest_date)
-                                                       when 'MONTH' then dateadd(month, a1.interval, a1.lastest_date)
-                                                       when 'DAY' then dateadd(day, a1.interval, a1.lastest_date)
-                                                       when 'HOURS' then dateadd(day, a1.interval / 24, a1.lastest_date) end as due_date
-                            from [maintenance_plan] as a1
+                               , case a1.interval_term when 'YEAR' then (a1.lastest_date + make_interval(years => a1.interval))
+                                                       when 'MONTH' then (a1.lastest_date + make_interval(months => a1.interval))
+                                                       when 'DAY' then (a1.lastest_date + make_interval(days => a1.interval))
+                                                       when 'HOURS' then (a1.lastest_date + make_interval(days => (a1.interval / 24))) end as due_date
+                            from maintenance_plan as a1
                            where vessel_no = @vesselNo) as b
            on a.vessel_no = b.vessel_no
           and a.equip_no = b.equip_no

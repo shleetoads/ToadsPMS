@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [section] as a
+      `merge section as a
        using (select @vesselNo as vessel_no
                    , @equipNo as equip_no
                    , @sectionCode as section_code
@@ -21,10 +21,10 @@ export async function POST(req: Request) {
           on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no and a.section_code = b.section_code)
         when matched then
              update
-                set a.section_name = b.section_name
-                  , a.description = b.description
-                  , a.modify_date = getdate()
-                  , a.modify_user = b.modify_user
+                set section_name = b.section_name
+                  , description = b.description
+                  , modify_date = now()::timestamp
+                  , modify_user = b.modify_user
         when not matched then
              insert (vessel_no
                    , equip_no
@@ -35,10 +35,10 @@ export async function POST(req: Request) {
                    , regist_user)
              values (b.vessel_no
                    , b.equip_no
-                   , (select format(isnull(max(section_code), 0) + 1, '000') from [section] where vessel_no = b.vessel_no and equip_no = b.equip_no)
+                   , (select lpad((coalesce(max(section_code), 0) + 1)::text, 3, '0') from section where vessel_no = b.vessel_no and equip_no = b.equip_no)
                    , b.section_name
                    , b.description
-                   , getdate()
+                   , now()::timestamp
                    , b.regist_user);`,
       [
         { name: 'vesselNo', value: item.vessel_no },
@@ -64,11 +64,11 @@ export async function POST(req: Request) {
             , description
             , regist_date
             , regist_user
-          from [section]
+          from section
         where vessel_no = @vesselNo
           and equip_no = @equipNo
-          and section_code = (select max(section_code) 
-                                from [section]
+          and section_code = (select max(section_code)
+                                from section
                                 where vessel_no = @vesselNo
                                   and equip_no = @equipNo
                                   and registUser = @registUser);`,
@@ -92,8 +92,8 @@ export async function POST(req: Request) {
         if (res.ok) {
           // 섹션 정보의 마지막 전송일자 수정
           execute(
-            `update [section]
-                set last_send_date = getdate()
+            `update section
+                set last_send_date = now()::timestamp
               where vessel_no = @vesselNo
                 and equip_no = @equipNo
                 and section_code = @sectionCode;`,

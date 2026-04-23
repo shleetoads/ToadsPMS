@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [section] (
+      `insert into section (
               vessel_no
             , equip_no
             , section_code
@@ -21,10 +21,10 @@ export async function POST(req: Request) {
        values (
               @vesselNo
             , @equipNo
-            , (select format(isnull(max(section_code), 0) + 1, '000') from [section] where vessel_no = @vesselNo and equip_no = @equipNo)
+            , (select lpad((coalesce(max(section_code), 0) + 1)::text, 3, '0') from section where vessel_no = @vesselNo and equip_no = @equipNo)
             , @sectionName
             , @description
-            , getdate()
+            , now()::timestamp
             , @registUser
        );`,
       [
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     
     const sections: Section[] = await query(
       `select max(section_code) as section_code
-          from [section]
+          from section
         where vessel_no = @vesselNo
           and equip_no = @equipNo
           and regist_user = @registUser`,

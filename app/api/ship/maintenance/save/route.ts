@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [maintenance_plan] as a
+      `merge maintenance_plan as a
        using (select @vesselNo as vessel_no
                    , @equipNo as equip_no
                    , @sectionCode as section_code
@@ -38,23 +38,23 @@ export async function POST(req: Request) {
           and a.plan_code = b.plan_code)
         when matched then
              update
-                set a.plan_name = b.plan_name
-                  , a.manufacturer = b.manufacturer
-                  , a.model = b.model
-                  , a.specifications = b.specifications
-                  , a.lastest_date = b.lastest_date
-                  , a.workers = b.workers
-                  , a.work_hours = b.work_hours
-                  , a.interval = b.interval
-                  , a.interval_term = b.interval_term
-                  , a.location = b.location
-                  , a.self_maintenance = b.self_maintenance
-                  , a.manager = b.manager
-                  , a.important_items = b.important_items
-                  , a.instructions = b.instructions
-                  , a.critical = b.critical
-                  , a.modify_date = getdate()
-                  , a.modify_user = b.modify_user
+                set plan_name = b.plan_name
+                  , manufacturer = b.manufacturer
+                  , model = b.model
+                  , specifications = b.specifications
+                  , lastest_date = b.lastest_date
+                  , workers = b.workers
+                  , work_hours = b.work_hours
+                  , interval = b.interval
+                  , interval_term = b.interval_term
+                  , location = b.location
+                  , self_maintenance = b.self_maintenance
+                  , manager = b.manager
+                  , important_items = b.important_items
+                  , instructions = b.instructions
+                  , critical = b.critical
+                  , modify_date = now()::timestamp
+                  , modify_user = b.modify_user
         when not matched then
              insert (vessel_no
                    , equip_no
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
              values (b.vessel_no
                    , b.equip_no
                    , b.section_code
-                   , (select format(isnull(max(plan_code), 0) + 1, '000') from [maintenance_plan] where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
+                   , (select lpad((coalesce(max(plan_code), 0) + 1)::text, 3, '0') from maintenance_plan where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
                    , b.plan_name
                    , b.manufacturer
                    , b.model
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
                    , b.important_items
                    , b.instructions
                    , b.critical
-                   , getdate()
+                   , now()::timestamp
                    , b.regist_user);`,
       [
         { name: 'vesselNo', value: item.vessel_no },
@@ -150,12 +150,12 @@ export async function POST(req: Request) {
             , critical
             , regist_date
             , regist_user
-         from [maintenance_plan]
+         from maintenance_plan
         where vessel_no = @vesselNo
           and equip_no = @equipNo
           and section_code = @sectionCode
           and plan_code = (select max(plan_code) 
-                             from [maintenance_plan]
+                             from maintenance_plan
                             where vessel_no = @vesselNo
                               and equip_no = @equipNo
                               and section_code = @sectionCode
@@ -181,8 +181,8 @@ export async function POST(req: Request) {
         if (res.ok) {
           // 정비 정보의 마지막 전송일자 수정
           execute(
-            `update [maintenance_plan]
-                set last_send_date = getdate()
+            `update maintenance_plan
+                set last_send_date = now()::timestamp
               where vessel_no = @vesselNo
                 and equip_no = @equipNo
                 and section_code = @sectionCode

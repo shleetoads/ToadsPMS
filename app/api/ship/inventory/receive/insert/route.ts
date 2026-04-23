@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool, query, execute } from '@/db'; // 이전에 만든 query 함수
+import { query, withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { ReceiveData } from '@/types/inventory/receive/receive_data';
 import { Receive } from '@/types/inventory/receive/receive';
 
@@ -9,18 +9,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const receiveData : ReceiveData = body;
 
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-
-    try {
-      let count = 0;
+    const count = await withTransaction(async (client) => {
+      let total = 0;
       for (const item of receiveData.materials) {
-        // DB에서 사용자 정보 확인
-
-        let queryString = `
-        insert into [receive] (
+        const queryString = `
+        insert into receive (
                vessel_no
              , receive_no
              , material_code
@@ -36,8 +29,8 @@ export async function POST(req: Request) {
         )
         values (
                @vesselNo
-             , (select 'I0' + format(getdate(), 'yyMM') + format(isnull(right(max(receive_no), 3), 0) + 1, '000')
-                  from [receive]
+             , (select 'I0' || to_char(now(), 'YYMM') || lpad((coalesce(right(max(receive_no), 3)::int, 0) + 1)::text, 3, '0')
+                  from receive
                  where vessel_no = @vesselNo
                    and receive_type = 'I0')
              , @materialCode
@@ -51,110 +44,97 @@ export async function POST(req: Request) {
              , @receiveQty
              , @receiveLocation
              , @receiveRemark
-             , getdate()
+             , now()::timestamp
              , @registUser
         );`;
 
-        let params = [
-          { name: 'vesselNo', value: receiveData.vessel_no }, 
-          { name: 'materialCode', value: item.material_code }, 
-          { name: 'receiveDate', value: receiveData.receive_date }, 
-          { name: 'deliveryLocation', value: receiveData.delivery_location }, 
-          { name: 'receiveType', value: item.receive_type }, 
-          { name: 'receiveQty', value: item.receive_qty }, 
-          { name: 'receiveLocation', value: item.delivery_location }, 
-          { name: 'receiveRemark', value: item.receive_remark }, 
-          { name: 'registUser', value: receiveData.regist_user }, 
-          { name: 'modifyUser', value: receiveData.modify_user }, 
+        const params: NamedParam[] = [
+          { name: 'vesselNo', value: receiveData.vessel_no },
+          { name: 'materialCode', value: item.material_code },
+          { name: 'receiveDate', value: receiveData.receive_date },
+          { name: 'deliveryLocation', value: receiveData.delivery_location },
+          { name: 'receiveType', value: item.receive_type },
+          { name: 'receiveQty', value: item.receive_qty },
+          { name: 'receiveLocation', value: item.delivery_location },
+          { name: 'receiveRemark', value: item.receive_remark },
+          { name: 'registUser', value: receiveData.regist_user },
+          { name: 'modifyUser', value: receiveData.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params);
+        const result = await client.query(text, values);
+        total += result.rowCount ?? 0;
       }
+      return total;
+    });
 
-      await transantion.commit();
+    if (count === 0) {
+      return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
+    }
 
-      if (count === 0) {
-        return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
-      }
+    // 저장된 입고 정보 조회
+    const sendData: Receive[] = await query(
+      `select vessel_no
+            , receive_no
+            , material_code
+            , receive_date
+            , receive_location
+            , receive_type
+            , receive_unit
+            , receive_qty
+            , receive_remark
+            , delivery_location
+            , regist_date
+            , regist_user
+         from receive
+        where vessel_no = @vesselNo
+          and regist_user = @registUser
+          and regist_date >= to_char(now()::timestamp, 'YYYY-MM-DD');`,
+      [
+        { name: 'vesselNo', value: receiveData.vessel_no },
+        { name: 'registUser', value: receiveData.regist_user },
+      ]
+    );
 
-      // 저장된 입고 정보 조회
-      const sendData: Receive[] = await query(
-        `select vessel_no
-              , receive_no
-              , material_code
-              , receive_date
-              , receive_location
-              , receive_type
-              , receive_unit
-              , receive_qty
-              , receive_remark
-              , delivery_location
-              , regist_date
-              , regist_user
-           from [receive]
-          where vessel_no = @vesselNo
-            and regist_user = @registUser
-            and regist_date >= convert(varchar(10), getdate(), 121);`,
-        [
-          { name: 'vesselNo', value: receiveData.vessel_no },
-          { name: 'registUser', value: receiveData.regist_user },
-        ]
-      );
-      
-      // 선박에서 저장된 정비 정보 전송
-      if (sendData[0]) {
+    // 선박에서 저장된 정비 정보 전송
+    if (sendData[0]) {
 
-        const fetchResponse = await fetch(`${remoteSiteUrl}/api/data/inventory/receive/sets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(sendData),
-        });
+      const fetchResponse = await fetch(`${remoteSiteUrl}/api/data/inventory/receive/sets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sendData),
+      });
 
-        if (fetchResponse.ok) {
-          const pool1 = await getPool();
-          const transantion1 = pool1.transaction();
-          await transantion1.begin();
-
-          // 정비 정보의 마지막 전송일자 수정
-          try {
+      if (fetchResponse.ok) {
+        // 정비 정보의 마지막 전송일자 수정
+        try {
+          await withTransaction(async (client) => {
             for (const item of sendData) {
-              const queryString = 
-                `update [receive]
-                    set last_send_date = getdate()
+              const queryString =
+                `update receive
+                    set last_send_date = now()::timestamp
                   where vessel_no = @vesselNo
                     and receive_no = @receiveNo;`
 
-              const params = [
+              const params: NamedParam[] = [
                 { name: 'vesselNo', value: item.vessel_no },
                 { name: 'receiveNo', value: item.receive_no },
               ];
 
-              const request = new sql.Request(transantion1);
-              params?.forEach(p => request.input(p.name, p.value));
-              await request.query(queryString);
+              const { text, values } = adaptNamedParams(queryString, params);
+              await client.query(text, values);
             }
-            
-            transantion1.commit();
-          } catch (err) {
-            transantion1.rollback();
-            console.error(err);
-            return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-          }
+          });
+        } catch (err) {
+          console.error(err);
+          return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
         }
       }
-      // 성공 정보 반환
-      return NextResponse.json({ success: true });
-    } catch (err) {
-      transantion.rollback();
-      console.error(err);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
     }
+    // 성공 정보 반환
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

@@ -10,31 +10,31 @@ export async function GET(req: Request) {
             , a.vessel_name
             , a.vessel_short_name
             , a.imo_no
-            , sum(case when b.due_date < getdate() then 1 else 0 end) as delayed_tasks
-            , sum(case when b.due_date >= dateadd(wk, datediff(wk, 0, getdate()), 0) and b.due_date <= dateadd(wk, datediff(wk, 0, getdate()), 7) then 1 else 0 end) as weekly_tasks
-            , sum(case when b.due_date >= dateadd(month, datediff(month, 0, getdate()), 0) and b.due_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 1 else 0 end) as monthly_tasks
-            , sum(case when b.lastest_date >= dateadd(month, datediff(month, 0, getdate()), 0) and b.lastest_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 1 else 0 end) as completed_tasks
-            , sum(case when b.due_date >= dateadd(month, datediff(month, 0, getdate()), 0) and b.due_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 1 else 0 end) +
-              sum(case when b.lastest_date >= dateadd(month, datediff(month, 0, getdate()), 0) and b.lastest_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 1 else 0 end) as total_tasks
-         from [vessel] as a
+            , sum(case when b.due_date < now()::timestamp then 1 else 0 end) as delayed_tasks
+            , sum(case when b.due_date >= date_trunc('week', now())::timestamp and b.due_date <= (date_trunc('week', now()) + interval '7 day')::timestamp then 1 else 0 end) as weekly_tasks
+            , sum(case when b.due_date >= date_trunc('month', now())::timestamp and b.due_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as monthly_tasks
+            , sum(case when b.lastest_date >= date_trunc('month', now())::timestamp and b.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as completed_tasks
+            , sum(case when b.due_date >= date_trunc('month', now())::timestamp and b.due_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) +
+              sum(case when b.lastest_date >= date_trunc('month', now())::timestamp and b.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as total_tasks
+         from vessel as a
          left outer join (select vessel_no
                                , equip_no
                                , section_code
                                , plan_code
                                , plan_name
                                , lastest_date
-                               , case when dbo.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code) >
-                                           case interval_term when 'YEAR' then dateadd(year, interval, lastest_date)
-                                                              when 'MONTH' then dateadd(month, interval, lastest_date)
-                                                              when 'DAY' then dateadd(day, interval, lastest_date)
-                                                              when 'HOURS' then dateadd(day, interval / 24, lastest_date) end 
-                                      then dbo.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code) 
-                                      else case interval_term when 'YEAR' then dateadd(year, interval, lastest_date)
-                                                              when 'MONTH' then dateadd(month, interval, lastest_date)
-                                                              when 'DAY' then dateadd(day, interval, lastest_date)
-                                                              when 'HOURS' then dateadd(day, interval / 24, lastest_date) end 
+                               , case when public.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code) >
+                                           case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
+                                                              when 'MONTH' then (lastest_date + make_interval(months => interval))
+                                                              when 'DAY' then (lastest_date + make_interval(days => interval))
+                                                              when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end
+                                      then public.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code)
+                                      else case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
+                                                              when 'MONTH' then (lastest_date + make_interval(months => interval))
+                                                              when 'DAY' then (lastest_date + make_interval(days => interval))
+                                                              when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end
                                       end as due_date
-                            from [maintenance_plan]) as b
+                            from maintenance_plan) as b
            on a.vessel_no = b.vessel_no
         where a.use_yn = 'Y'
         group by a.vessel_no

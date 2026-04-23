@@ -15,7 +15,7 @@ export async function GET(req: Request) {
             , a.standard_qty
             , a.receive_qty - (a.release_qty + a.loss_qty) as stock_qty
             , a.standard_qty - (a.receive_qty - (a.release_qty + a.loss_qty)) as shortage_qty
-            , isnull(a.last_used, '') as last_used
+            , coalesce(a.last_used, '') as last_used
          from (select a.vessel_no
                     , a.vessel_name
                     , b.machine_name
@@ -23,30 +23,30 @@ export async function GET(req: Request) {
                     , b.material_code
                     , b.material_name
                     , b.material_unit
-                    , isnull(b.standard_qty, 0) as standard_qty
-                    , (select sum(isnull(receive_qty, 0))
-                         from [receive]
+                    , coalesce(b.standard_qty, 0) as standard_qty
+                    , (select sum(coalesce(receive_qty, 0))
+                         from receive
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as receive_qty
-                    , (select sum(isnull(release_qty, 0))
-                         from [release]
+                    , (select sum(coalesce(release_qty, 0))
+                         from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as release_qty
-                    , (select sum(isnull(loss_qty, 0))
-                         from [loss]
+                    , (select sum(coalesce(loss_qty, 0))
+                         from loss
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as loss_qty
                     , (select max(release_date)
-                         from [release]
+                         from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as last_used
-                 from [vessel] as a
-                 left outer join [material] as b
+                 from vessel as a
+                 left outer join material as b
                    on a.vessel_no = b.vessel_no
-                 left outer join [machine] as c
+                 left outer join machine as c
                    on b.vessel_no = c.vessel_no
                   and b.machine_name = c.machine_name
-                 left outer join [warehouse] as d
+                 left outer join warehouse as d
                    on b.vessel_no = d.vessel_no
                   and b.warehouse_no = d.warehouse_no
                 where a.use_yn = 'Y') as a

@@ -19,22 +19,22 @@ export async function GET(req: Request) {
             , d.plan_name
             , d.interval
             , d.interval_term
-            , convert(varchar(10), d.lastest_date, 121) as lastest_date
-            , convert(varchar(10), case d.interval_term when 'YEAR' then dateadd(year, d.interval, d.lastest_date)
-                                                        when 'MONTH' then dateadd(month, d.interval, d.lastest_date)
-                                                        when 'DAY' then dateadd(day, d.interval, d.lastest_date)
-                                                        when 'HOURS' then dateadd(day, d.interval / 24, d.lastest_date) end, 121) as due_date
-            , convert(varchar(10), e.work_date, 121) as work_date
-          from [vessel] as a
-         inner join [equipment] as b
+            , to_char(d.lastest_date, 'YYYY-MM-DD') as lastest_date
+            , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => d.interval))
+                                                        when 'MONTH' then (d.lastest_date + make_interval(months => d.interval))
+                                                        when 'DAY' then (d.lastest_date + make_interval(days => d.interval))
+                                                        when 'HOURS' then (d.lastest_date + make_interval(days => (d.interval / 24))) end, 'YYYY-MM-DD') as due_date
+            , to_char(e.work_date, 'YYYY-MM-DD') as work_date
+          from vessel as a
+         inner join equipment as b
             on a.vessel_no = b.vessel_no
-          left join [machine] as z
+          left join machine as z
             on b.vessel_no = z.vessel_no
            and b.machine_name = z.machine_name
-         inner join [section] as c
+         inner join section as c
             on b.vessel_no = c.vessel_no
            and b.equip_no = c.equip_no
-         inner join [maintenance_plan] as d
+         inner join maintenance_plan as d
             on c.vessel_no = d.vessel_no
            and c.equip_no = d.equip_no
            and c.section_code = d.section_code
@@ -52,14 +52,14 @@ export async function GET(req: Request) {
                                              PARTITION BY vessel_no, equip_no, section_code, plan_code
                                              ORDER BY work_date DESC
                                          ) AS rownum
-                                   from [maintenance_work]) as a1
+                                   from maintenance_work) as a1
                                   where a1.rownum <= 5) as e
             on d.vessel_no = e.vessel_no
            and d.equip_no = e.equip_no
            and d.section_code = e.section_code
            and d.plan_code = e.plan_code
          where a.use_yn = 'Y'
-         order by a.vessel_no, isnull(z.sort_no, 999), b.equip_no, c.section_code, d.plan_code, e.work_date`
+         order by a.vessel_no, coalesce(z.sort_no, 999), b.equip_no, c.section_code, d.plan_code, e.work_date`
     );
 
     let vessels: Maintenance[] = [];

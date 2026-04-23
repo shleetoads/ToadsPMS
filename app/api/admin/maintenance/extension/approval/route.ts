@@ -8,12 +8,12 @@ export async function POST(req: Request) {
     const item : MaintenanceExtension = body;
 
     let count = await execute(`
-      update [maintenance_extension]
-         set approval_date = getdate()
+      update maintenance_extension
+         set approval_date = now()::timestamp
            , approver = @approver
            , approval_status = @approvalStatus
            , approval_reason = @approvalReason
-           , modify_date = getdate()
+           , modify_date = now()::timestamp
            , modify_user = @modifyUser
        where vessel_no = @vesselNo
          and equip_no = @equipNo

@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     // DB에서 사용자 정보 확인
     const items: Position[] = await query(
       `select pos_no, pos_code, pos_name, pos_ename, pos_part, use_yn
-         from [position]
+         from position
         where use_yn = 'Y'`
     );
 

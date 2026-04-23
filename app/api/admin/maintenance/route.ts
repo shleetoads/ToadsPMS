@@ -29,18 +29,18 @@ export async function GET(req: Request) {
             , a.important_items
             , a.instructions
             , a.critical
-            , convert(varchar(10), a.due_date, 121) as due_date 
-            , convert(varchar(10), a.extension_date, 121) as extension_date 
-            , case when a.due_date < getdate() and a.lastest_date < getdate() and a.extension_date >= getdate() then 'EXTENSION'
-			             when a.due_date < getdate() then 'DELAYED' 
-                   when a.lastest_date >= dateadd(month, datediff(month, 0, getdate()), 0) and a.lastest_date < dateadd(month, 1, dateadd(month, datediff(month, 0, getdate()), 0)) then 'COMPLATE'
+            , to_char(a.due_date, 'YYYY-MM-DD') as due_date 
+            , to_char(a.extension_date, 'YYYY-MM-DD') as extension_date 
+            , case when a.due_date < now()::timestamp and a.lastest_date < now()::timestamp and a.extension_date >= now()::timestamp then 'EXTENSION'
+			             when a.due_date < now()::timestamp then 'DELAYED' 
+                   when a.lastest_date >= date_trunc('month', now())::timestamp and a.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 'COMPLATE'
                    else 'NORMAL' end as status
-            , datediff(day, getdate(), a.due_date) as days_until
-            , datediff(day, getdate(), a.extension_date) as extension_days_until
+            , ((a.due_date)::date - (now()::timestamp)::date) as days_until
+            , ((a.extension_date)::date - (now()::timestamp)::date) as extension_days_until
          from (select a.vessel_no
                     , a.vessel_name
                     , b.machine_name
-                    , isnull(m.sort_no, 999) as machine_sort
+                    , coalesce(m.sort_no, 999) as machine_sort
                     , b.equip_no
                     , b.equip_name
                     , c.section_code
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
                     , d.manufacturer
                     , d.model
                     , d.specifications
-                    , convert(varchar(10), d.lastest_date, 121) as lastest_date
+                    , to_char(d.lastest_date, 'YYYY-MM-DD') as lastest_date
                     , d.workers
                     , d.work_hours
                     , d.interval
@@ -61,21 +61,21 @@ export async function GET(req: Request) {
                     , d.important_items
                     , d.instructions
                     , d.critical
-                    , convert(varchar(10), case d.interval_term when 'YEAR' then dateadd(year, d.interval, d.lastest_date)
-                                                                when 'MONTH' then dateadd(month, d.interval, d.lastest_date)
-                                                                when 'DAY' then dateadd(day, d.interval, d.lastest_date)
-                                                                when 'HOURS' then dateadd(day, d.interval / 24, d.lastest_date) end, 121) as due_date
-                    , dbo.fn_get_maintenance_extension(d.vessel_no, d.equip_no, d.section_code, d.plan_code) as extension_date
-                 from [vessel] as a
-                 left outer join [equipment] as b
+                    , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => d.interval))
+                                                                when 'MONTH' then (d.lastest_date + make_interval(months => d.interval))
+                                                                when 'DAY' then (d.lastest_date + make_interval(days => d.interval))
+                                                                when 'HOURS' then (d.lastest_date + make_interval(days => (d.interval / 24))) end, 'YYYY-MM-DD') as due_date
+                    , public.fn_get_maintenance_extension(d.vessel_no, d.equip_no, d.section_code, d.plan_code) as extension_date
+                 from vessel as a
+                 left outer join equipment as b
                    on a.vessel_no = b.vessel_no
-                 left outer join [machine] as m
+                 left outer join machine as m
                    on b.vessel_no = m.vessel_no
                   and b.machine_name = m.machine_name
-                 left outer join [section] as c
+                 left outer join section as c
                    on b.vessel_no = c.vessel_no
                   and b.equip_no = c.equip_no
-                 left outer join [maintenance_plan] as d
+                 left outer join maintenance_plan as d
                    on c.vessel_no = d.vessel_no
                   and c.equip_no = d.equip_no
                   and c.section_code = d.section_code

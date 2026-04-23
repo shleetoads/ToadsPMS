@@ -24,8 +24,8 @@ export async function GET(req: Request) {
                  from receive
                 where vessel_no = a.vessel_no
                   and receive_location = a.warehouse_no) as receiving_count
-             , convert(varchar(10), a.regist_date, 121) as regist_date
-             , convert(varchar(10), a.modify_date, 121) as modify_date
+             , to_char(a.regist_date, 'YYYY-MM-DD') as regist_date
+             , to_char(a.modify_date, 'YYYY-MM-DD') as modify_date
           from warehouse as a
         inner join vessel as b
             on a.vessel_no = b.vessel_no

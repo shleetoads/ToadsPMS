@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool, query, execute } from '@/db'; // 이전에 만든 query 함수
+import { query, withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { Material } from '@/types/inventory/material/material';
 
 export async function POST(req: Request) {
@@ -12,47 +12,42 @@ export async function POST(req: Request) {
   }
 
   try {
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-
-    try {
-      let count = 0;
+    const count = await withTransaction(async (client) => {
+      let total = 0;
 
       for (const rows of excelData) {
         if (vesselNo !== rows.CallSign) {
           continue;
         }
 
-        let queryString = 
-        `merge [material] as a
+        let queryString =
+        `merge material as a
           using (select @vesselNo as vessel_no
                       , @materialName as material_name
                       , @materialGroup as material_group
-                      , dbo.fn_get_material_type(@materialType) as material_type
-                      , dbo.fn_get_material_unit(@materialUnit) as material_unit
-                      , dbo.fn_get_warehouse_no(@warehouseName) as warehouse_no
+                      , public.fn_get_material_type(@materialType) as material_type
+                      , public.fn_get_material_unit(@materialUnit) as material_unit
+                      , public.fn_get_warehouse_no(@warehouseName) as warehouse_no
                       , @drawingNo as drawing_no
                       , @machineName as machine_name
                       , @standardQty as standard_qty
                       , @registUser as regist_user
                       , @modifyUser as modify_user ) as b
-            on (a.vessel_no = b.vessel_no 
+            on (a.vessel_no = b.vessel_no
             and a.machine_name = b.machine_name
             and a.material_name = b.material_name)
           when matched then
-                update 
-                  set a.material_name = b.material_name
-                    , a.material_group = b.material_group
-                    , a.material_type = b.material_type
-                    , a.material_unit = b.material_unit
-                    , a.warehouse_no = b.warehouse_no
-                    , a.drawing_no = b.drawing_no
-                    , a.machine_name = b.machine_name
-                    , a.standard_qty = b.standard_qty
-                    , a.modify_date = getdate()
-                    , a.modify_user = b.modify_user
+                update
+                  set material_name = b.material_name
+                    , material_group = b.material_group
+                    , material_type = b.material_type
+                    , material_unit = b.material_unit
+                    , warehouse_no = b.warehouse_no
+                    , drawing_no = b.drawing_no
+                    , machine_name = b.machine_name
+                    , standard_qty = b.standard_qty
+                    , modify_date = now()::timestamp
+                    , modify_user = b.modify_user
           when not matched then
                 insert (
                       vessel_no
@@ -70,11 +65,11 @@ export async function POST(req: Request) {
               )
               values (
                       b.vessel_no
-                    , (select b.material_type + format(getdate(), 'yyMM') + format(isnull(right(max(material_code), 3), 0) + 1, '000')
-                         from [material]
+                    , (select b.material_type || to_char(now(), 'YYMM') || lpad((coalesce(right(max(material_code), 3)::int, 0) + 1)::text, 3, '0')
+                         from material
                         where vessel_no = b.vessel_no
                           and material_type = b.material_type
-                          and material_type like b.material_type + format(getdate(), 'yyMM') + '%')
+                          and material_type like b.material_type || to_char(now(), 'YYMM') || '%')
                     , b.material_name
                     , b.material_group
                     , b.material_type
@@ -83,11 +78,11 @@ export async function POST(req: Request) {
                     , b.drawing_no
                     , b.machine_name
                     , b.standard_qty
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_user
               );`
 
-        let params = [
+        let params: NamedParam[] = [
           { name: 'vesselNo', value: vesselNo },
           { name: 'materialName', value: rows.MaterialName ? rows.MaterialName : '' },
           { name: 'materialGroup', value: rows.MaterialGroup ? rows.MaterialGroup : '' },
@@ -97,21 +92,19 @@ export async function POST(req: Request) {
           { name: 'drawingNo', value: rows.DrawingNo ? rows.DrawingNo : '' },
           { name: 'machineName', value: rows.Machine ? rows.Machine : '' },
           { name: 'standardQty', value: rows.StandardQty ? rows.StandardQty : '0' },
-          { name: 'initialStock', value: rows.InitialStock ? rows.InitialStock : '0' }, 
+          { name: 'initialStock', value: rows.InitialStock ? rows.InitialStock : '0' },
           { name: 'registUser', value: registUser },
           { name: 'modifyUser', value: modifyUser },
         ];
 
-        const request = new sql.Request(transantion);
+        let { text, values } = adaptNamedParams(queryString, params);
+        let result = await client.query(text, values);
 
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-
-        count += result.rowsAffected[0];
+        total += result.rowCount ?? 0;
 
         if (rows.InitialStock && Number.parseInt(rows.InitialStock) > 0) {
           queryString = `
-          merge [receive] as a
+          merge receive as a
           using (select a1.vessel_no
                       , a1.material_code
                       , a1.material_unit as receive_unit
@@ -119,24 +112,24 @@ export async function POST(req: Request) {
                       , 'S0' as receive_type
                       , @registUser as regist_user
                       , @modifyUser as modify_user
-                  from [material] as a1
+                  from material as a1
                   where a1.vessel_no = @vesselNo
                     and a1.machine_name = @machineName
-                    and a1.material_code = (select max(material_code) 
-                                              from [material]
+                    and a1.material_code = (select max(material_code)
+                                              from material
                                             where vessel_no = @vesselNo
                                               and machine_name = @machineName
                                               and material_name = @materialName
                                               and regist_user = @registUser)) as b
-            on (a.vessel_no = b.vessel_no 
+            on (a.vessel_no = b.vessel_no
                 and a.material_code = b.material_code
                 and a.receive_type = b.receive_type)
           when matched then
                 update
-                  set a.receive_unit = b.receive_unit
-                    , a.receive_qty = b.receive_qty
-                    , a.modify_date = getdate()
-                    , a.modify_user = b.modify_user
+                  set receive_unit = b.receive_unit
+                    , receive_qty = b.receive_qty
+                    , modify_date = now()::timestamp
+                    , modify_user = b.modify_user
           when not matched then
                 insert (vessel_no
                       , receive_no
@@ -147,110 +140,102 @@ export async function POST(req: Request) {
                       , regist_date
                       , regist_user)
                 values (b.vessel_no
-                      , (select b.receive_type + format(getdate(), 'yyMM') + format(isnull(right(max(receive_no), 3), 0) + 1, '000') 
-                          from [receive] 
+                      , (select b.receive_type || to_char(now(), 'YYMM') || lpad((coalesce(right(max(receive_no), 3)::int, 0) + 1)::text, 3, '0')
+                          from receive
                           where vessel_no = b.vessel_no
                             and receive_type = b.receive_type)
                       , b.material_code
                       , b.receive_unit
                       , b.receive_type
                       , b.receive_qty
-                      , getdate()
+                      , now()::timestamp
                       , b.regist_user);`;
-          
-          result = await request.query(queryString);
-          count += result.rowsAffected[0];
+
+          ({ text, values } = adaptNamedParams(queryString, params));
+          result = await client.query(text, values);
+          total += result.rowCount ?? 0;
         }
       }
 
-      transantion.commit();
+      return total;
+    });
 
-      if (count === 0) {
-        return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
-      }
+    if (count === 0) {
+      return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
+    }
 
-      // 저장된 자재 정보 조회
-      const sendData: Material[] = await query(
-        `select vessel_no
-              , material_code
-              , machine_name
-              , material_name
-              , material_group
-              , material_spec
-              , material_type
-              , material_unit
-              , warehouse_no
-              , drawing_no
-              , standard_qty
-              , regist_date
-              , regist_user
-            from [material]
-          where vessel_no = @vesselNo
-            and regist_user = @registUser
-            and convert(varchar(10), regist_date, 121) = convert(varchar(10), getdate(), 121);`,
-        [
-          { name: 'vesselNo', value: vesselNo },
-          { name: 'registUser', value: registUser },
-        ]
-      );
-      
-      // 선박에서 저장된 자재 정보 전송
-      if (sendData) {
-        fetch(`${remoteSiteUrl}/api/data/inventory/material/sets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(sendData),
-        })
-        .then(res => {
-          if (res.ok) {
-            const subTransantion = pool.transaction();
-            try {
-              async () => {
-                await subTransantion.begin();
+    // 저장된 자재 정보 조회
+    const sendData: Material[] = await query(
+      `select vessel_no
+            , material_code
+            , machine_name
+            , material_name
+            , material_group
+            , material_spec
+            , material_type
+            , material_unit
+            , warehouse_no
+            , drawing_no
+            , standard_qty
+            , regist_date
+            , regist_user
+          from material
+        where vessel_no = @vesselNo
+          and regist_user = @registUser
+          and to_char(regist_date, 'YYYY-MM-DD') = to_char(now()::timestamp, 'YYYY-MM-DD');`,
+      [
+        { name: 'vesselNo', value: vesselNo },
+        { name: 'registUser', value: registUser },
+      ]
+    );
 
+    // 선박에서 저장된 자재 정보 전송
+    // NOTE: 원본의 try/catch 내 `async () => { ... }` 블록은 호출되지 않아 동작하지 않았음 (기존 버그 보존).
+    if (sendData) {
+      fetch(`${remoteSiteUrl}/api/data/inventory/material/sets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sendData),
+      })
+      .then(res => {
+        if (res.ok) {
+          try {
+            async () => {
+              await withTransaction(async (client) => {
                 for (const material of sendData) {
                   // 자재 정보의 마지막 전송일자 수정
-                  const queryString = 
-                    `update [material]
-                        set last_send_date = getdate()
+                  const queryString =
+                    `update material
+                        set last_send_date = now()::timestamp
                       where vessel_no = @vesselNo
                         and material_code = @materialCode;`
 
-                  let params =[
+                  const params: NamedParam[] = [
                     { name: 'vesselNo', value: material.vessel_no },
                     { name: 'materialCode', value: material.material_code },
                   ]
 
-                  const request = new sql.Request(transantion);
-
-                  params?.forEach(p => request.input(p.name, p.value));
-                  await request.query(queryString);
+                  const { text, values } = adaptNamedParams(queryString, params);
+                  await client.query(text, values);
                 }
-
-                subTransantion.commit();
-              }
-            } catch (err) {
-              subTransantion.rollback();
-              return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+              });
             }
+          } catch (err) {
+            return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
           }
-          
-          return res.json();
-        })
-        .catch(err => {
-          console.error('Error triggering cron job:', err);
-        });
-      }
+        }
 
-      // 성공 정보 반환
-      return NextResponse.json({ success: true });
-    } catch (err) {
-      console.error(err)
-      transantion.rollback();
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+        return res.json();
+      })
+      .catch(err => {
+        console.error('Error triggering cron job:', err);
+      });
     }
+
+    // 성공 정보 반환
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

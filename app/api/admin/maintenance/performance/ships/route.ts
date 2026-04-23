@@ -11,13 +11,13 @@ export async function GET(req: Request) {
             , a.vessel_short_name
             , a.imo_no
             , a.use_yn
-            , (select count(1) from [equipment] where vessel_no = a.vessel_no) as machine_count
-            , (select count(1) from [maintenance_plan] where vessel_no = a.vessel_no) as maintenance_count
-            , (select count(1) from [user] where ship_no = a.vessel_no) as crew
-         from [vessel] as a
+            , (select count(1) from equipment where vessel_no = a.vessel_no) as machine_count
+            , (select count(1) from maintenance_plan where vessel_no = a.vessel_no) as maintenance_count
+            , (select count(1) from "user" where ship_no = a.vessel_no) as crew
+         from vessel as a
         where a.use_yn = 'Y'
           and exists (select 1
-                        from [maintenance_plan] as b
+                        from maintenance_plan as b
                        where b.vessel_no = a.vessel_no)`
     );
 

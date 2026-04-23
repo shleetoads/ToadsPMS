@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     // DB에서 사용자 정보 확인
     const items: User[] = await query(
       `select account_no, user_name, user_ename, email, use_yn, ship_no, position, user_auth 
-         from [user]`
+         from "user"`
     );
 
     if (items.length === 0) {

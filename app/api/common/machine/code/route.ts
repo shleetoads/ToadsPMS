@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const items: Machine[] = await query(
       `select vessel_no
             , machine_name
-         from [machine]
+         from machine
         where vessel_no = @vesselNo
         order by vessel_no, sort_no`,
       [

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [user] (
+      `insert into "user" (
               account_no
             , user_name
             , user_ename
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
             , regist_user
        )
        values (
-              (select isnull(max(account_no), 10000) + 1 from [user])
+              (select coalesce(max(account_no), 10000) + 1 from "user")
             , @userName
             , @userEname
             , @email
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
             , @shipNo
             , @userAuth
             , @useYn
-            , getdate()
+            , now()::timestamp
             , @registUser
        );`,
       [

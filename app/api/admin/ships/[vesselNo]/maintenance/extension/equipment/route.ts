@@ -13,9 +13,9 @@ export async function GET(req: Request) {
             , a.equip_no
             , a.equip_name
             , a.machine_name
-         from [equipment] as a
+         from equipment as a
         where exists (select 1
-                        from [maintenance_extension] as b
+                        from maintenance_extension as b
                        where b.vessel_no = a.vessel_no
                          and b.equip_no = a.equip_no)
           and a.vessel_no = @vesselNo`,

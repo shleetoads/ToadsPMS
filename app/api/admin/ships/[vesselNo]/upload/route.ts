@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool } from '@/db'; // 이전에 만든 query 함수
+import { withTransaction, adaptNamedParams, NamedParam } from '@/db';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -10,12 +10,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-
-    try {
+    const count = await withTransaction(async (client) => {
       let count = 0;
       let equipNo: string = '';
       let machineName: string = '';
@@ -37,20 +32,20 @@ export async function POST(req: Request) {
           sectionCode = '';
           sectionName = '';
 
-          let queryString = 
-            `merge [machine] as a
+          let queryString =
+            `merge machine as a
              using (select @vesselNo as vessel_no
                          , @machine as machine_name
                          , @manufacturer as manufacturer
                          , @registUser as regist_user
                          , @modifyUser as modify_user) as b
-                on (a.vessel_no = b.vessel_no 
+                on (a.vessel_no = b.vessel_no
                and  a.machine_name = b.machine_name)
               when matched then
                    update
-                      set a.manufacturer = b.manufacturer
-                        , a.modify_date = getdate()
-                        , a.modify_user = b.modify_user
+                      set manufacturer = b.manufacturer
+                        , modify_date = now()::timestamp
+                        , modify_user = b.modify_user
               when not matched then
                    insert (
                            vessel_no
@@ -64,22 +59,21 @@ export async function POST(req: Request) {
                            b.vessel_no
                          , b.machine_name
                          , b.manufacturer
-                         , (select isnull(max(sort_no), 0) + 1 from [machine] where vessel_no = b.vessel_no)
-                         , getdate()
+                         , (select coalesce(max(sort_no), 0) + 1 from machine where vessel_no = b.vessel_no)
+                         , now()::timestamp
                          , b.regist_user
                    );`
 
-          let params = [
+          let params: NamedParam[] = [
             { name: 'vesselNo', value: vesselNo },
             { name: 'machine', value: rows.Machine ? rows.Machine : '' },
             { name: 'manufacturer', value: rows.Maker ? rows.Maker : '' },
             { name: 'registUser', value: registUser },
             { name: 'modifyUser', value: modifyUser }
           ];
-          
-          const request = new sql.Request(transantion);
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
+
+          const { text, values } = adaptNamedParams(queryString, params);
+          let result = await client.query(text, values);
 
           machineName = rows.Machine;
         }
@@ -88,8 +82,8 @@ export async function POST(req: Request) {
           sectionCode = '';
           sectionName = '';
 
-          let queryString = 
-            `merge [equipment] as a
+          let queryString =
+            `merge equipment as a
              using (select @vesselNo as vessel_no
                          , @equipName as equip_name
                          , @category as category
@@ -98,17 +92,17 @@ export async function POST(req: Request) {
                          , @machine as machine_name
                          , @registUser as regist_user
                          , @modifyUser as modify_user) as b
-                on (a.vessel_no = b.vessel_no 
+                on (a.vessel_no = b.vessel_no
                and  a.equip_name = b.equip_name
                and a.machine_name = b.machine_name )
               when matched then
                    update
-                      set a.category = lower(b.category)
-                        , a.manufacturer = b.manufacturer
-                        , a.model = b.model
-                        , a.machine_name = b.machine_name
-                        , a.modify_date = getdate()
-                        , a.modify_user = b.modify_user
+                      set category = lower(b.category)
+                        , manufacturer = b.manufacturer
+                        , model = b.model
+                        , machine_name = b.machine_name
+                        , modify_date = now()::timestamp
+                        , modify_user = b.modify_user
               when not matched then
                    insert (
                            vessel_no
@@ -123,17 +117,17 @@ export async function POST(req: Request) {
                    )
                    values (
                            b.vessel_no
-                         , (select format(isnull(max(equip_no), 0) + 1, '000') from [equipment] where vessel_no = b.vessel_no)
+                         , (select lpad((coalesce(max(equip_no), 0) + 1)::text, 3, '0') from equipment where vessel_no = b.vessel_no)
                          , b.equip_name
                          , lower(b.category)
                          , b.manufacturer
                          , b.model
                          , b.machine_name
-                         , getdate()
+                         , now()::timestamp
                          , b.regist_user
                    );`
 
-          let params = [
+          let params: NamedParam[] = [
             { name: 'vesselNo', value: vesselNo },
             { name: 'equipName', value: rows.Equipment },
             { name: 'category', value: rows.Category ? rows.Category : '' },
@@ -143,45 +137,45 @@ export async function POST(req: Request) {
             { name: 'registUser', value: registUser },
             { name: 'modifyUser', value: modifyUser }
           ];
-          
-          const request = new sql.Request(transantion);
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
+
+          const { text, values } = adaptNamedParams(queryString, params);
+          let result = await client.query(text, values);
 
           equipName = rows.Equipment;
 
-          if (result.rowsAffected[0] > 0) {
-            queryString = 
+          if ((result.rowCount ?? 0) > 0) {
+            queryString =
               `select equip_no
-                 from [equipment] 
+                 from equipment
                 where vessel_no = @vesselNo
                   and equip_name = @equipName
                   and machine_name = @machine;`
 
-            result = await request.query(queryString);
+            const { text: text2, values: values2 } = adaptNamedParams(queryString, params);
+            result = await client.query(text2, values2);
 
-            if (result.recordset.length > 0)
-              equipNo = result.recordset[0].equip_no;
+            if ((result.rows ?? []).length > 0)
+              equipNo = result.rows[0].equip_no;
             else
               equipNo = ''
           }
         }
 
         if (rows.Section && sectionName !== rows.Section) {
-          let queryString = 
-            `merge [section] as a
+          let queryString =
+            `merge section as a
              using (select @vesselNo as vessel_no
                          , @equipNo as equip_no
                          , @sectionName as section_name
                          , @registUser as regist_user
                          , @modifyUser as modify_user) as b
-                on (a.vessel_no = b.vessel_no 
+                on (a.vessel_no = b.vessel_no
                and  a.equip_no = b.equip_no
                and  a.section_name = b.section_name)
               when matched then
                    update
-                      set a.modify_date = getdate()
-                        , a.modify_user = b.modify_user
+                      set modify_date = now()::timestamp
+                        , modify_user = b.modify_user
               when not matched then
                    insert (
                            vessel_no
@@ -194,13 +188,13 @@ export async function POST(req: Request) {
                    values (
                            b.vessel_no
                          , b.equip_no
-                         , (select format(isnull(max(section_code), 0) + 1, '000') from [section] where vessel_no = b.vessel_no and equip_no = b.equip_no)
+                         , (select lpad((coalesce(max(section_code), 0) + 1)::text, 3, '0') from section where vessel_no = b.vessel_no and equip_no = b.equip_no)
                          , b.section_name
-                         , getdate()
+                         , now()::timestamp
                          , b.regist_user
                    );`
 
-          let params = [
+          let params: NamedParam[] = [
             { name: 'vesselNo', value: vesselNo },
             { name: 'equipNo', value: equipNo },
             { name: 'sectionName', value: rows.Section },
@@ -208,76 +202,76 @@ export async function POST(req: Request) {
             { name: 'modifyUser', value: modifyUser }
           ];
 
-          const request = new sql.Request(transantion);
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-          
+          const { text, values } = adaptNamedParams(queryString, params);
+          let result = await client.query(text, values);
+
           sectionName = rows.Section;
 
-          if (result.rowsAffected[0] > 0) {
-            queryString = 
+          if ((result.rowCount ?? 0) > 0) {
+            queryString =
               `select section_code
-                 from [section] 
+                 from section
                 where vessel_no = @vesselNo
                   and equip_no = @equipNo
                   and section_name = @sectionName;`
 
-            result = await request.query(queryString);
+            const { text: text2, values: values2 } = adaptNamedParams(queryString, params);
+            result = await client.query(text2, values2);
 
-            if (result.recordset.length > 0)
-              sectionCode = result.recordset[0].section_code;
+            if ((result.rows ?? []).length > 0)
+              sectionCode = result.rows[0].section_code;
             else
               sectionCode = ''
           }
         }
 
         if (rows.MaintenanceName) {
-          let queryString = 
-              `merge [maintenance_plan] as a
-              using (select @vesselNo as vessel_no 
-                          , @equipNo as equip_no 
-                          , @sectionCode as section_code 
-                          , @planName as plan_name 
-                          , @manufacturer as manufacturer 
-                          , @model as model 
-                          , @specifications as specifications 
-                          , @workers as workers 
-                          , @workHours as work_hours 
-                          , @intervalTerm as interval_term 
-                          , @interval as interval 
+          let queryString =
+              `merge maintenance_plan as a
+              using (select @vesselNo as vessel_no
+                          , @equipNo as equip_no
+                          , @sectionCode as section_code
+                          , @planName as plan_name
+                          , @manufacturer as manufacturer
+                          , @model as model
+                          , @specifications as specifications
+                          , @workers as workers
+                          , @workHours as work_hours
+                          , @intervalTerm as interval_term
+                          , @interval as interval
                           , case @location when 'DOCK' then 'D'
                                             when 'IN PORT' then 'P'
-                                            when 'SAILING' then 'S' else '' end as location 
-                          , @manager as manager 
-                          , @selfMaintenance as self_maintenance 
-                          , @critical as critical 
-                          , @lastestDate as lastest_date 
+                                            when 'SAILING' then 'S' else '' end as location
+                          , @manager as manager
+                          , @selfMaintenance as self_maintenance
+                          , @critical as critical
+                          , @lastestDate as lastest_date
                           , @instructions as instructions
                           , @prevPmsCode as prev_pms_code
                           , @registUser as regist_user
                           , @modifyUser as modify_user) as b
-                  on (a.vessel_no = b.vessel_no 
+                  on (a.vessel_no = b.vessel_no
                 and  a.equip_no = b.equip_no
                 and  a.section_code = b.section_code
                 and  a.plan_name = b.plan_name)
                 when matched then
-                    update 
-                        set a.manufacturer = b.manufacturer
-                          , a.model = b.model
-                          , a.specifications = b.specifications
-                          , a.workers = b.workers
-                          , a.work_hours = b.work_hours
-                          , a.interval_term = b.interval_term
-                          , a.interval = b.interval
-                          , a.location = b.location
-                          , a.manager = b.manager
-                          , a.self_maintenance = b.self_maintenance
-                          , a.critical = b.critical
-                          , a.lastest_date = b.lastest_date
-                          , a.instructions = b.instructions
-                          , a.prev_pms_code = b.prev_pms_code
-                          , a.modify_date = getdate()
-                          , a.modify_user = b.modify_user
+                    update
+                        set manufacturer = b.manufacturer
+                          , model = b.model
+                          , specifications = b.specifications
+                          , workers = b.workers
+                          , work_hours = b.work_hours
+                          , interval_term = b.interval_term
+                          , interval = b.interval
+                          , location = b.location
+                          , manager = b.manager
+                          , self_maintenance = b.self_maintenance
+                          , critical = b.critical
+                          , lastest_date = b.lastest_date
+                          , instructions = b.instructions
+                          , prev_pms_code = b.prev_pms_code
+                          , modify_date = now()::timestamp
+                          , modify_user = b.modify_user
                 when not matched then
                     insert (
                             vessel_no
@@ -306,7 +300,7 @@ export async function POST(req: Request) {
                             b.vessel_no
                           , b.equip_no
                           , b.section_code
-                          , (select format(isnull(max(plan_code), 0) + 1, '000') from [maintenance_plan] where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
+                          , (select lpad((coalesce(max(plan_code), 0) + 1)::text, 3, '0') from maintenance_plan where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
                           , b.plan_name
                           , b.manufacturer
                           , b.model
@@ -322,16 +316,16 @@ export async function POST(req: Request) {
                           , b.lastest_date
                           , b.instructions
                           , b.prev_pms_code
-                          , getdate()
+                          , now()::timestamp
                           , b.regist_user
                     );`
-          
+
           let lastestDate = rows.LastestDate == 'N/A' ? null : rows.LastestDate;
           if (typeof lastestDate === 'number') {
             lastestDate = ConvertExcelSerialToData(lastestDate);
           }
 
-          let params = [
+          let params: NamedParam[] = [
             { name: 'vesselNo', value: vesselNo },
             { name: 'equipNo', value: equipNo },
             { name: 'sectionCode', value: sectionCode },
@@ -354,27 +348,20 @@ export async function POST(req: Request) {
             { name: 'modifyUser', value: modifyUser }
           ];
 
-          const request = new sql.Request(transantion);
+          const { text, values } = adaptNamedParams(queryString, params);
+          let result = await client.query(text, values);
 
-          params?.forEach(p => request.input(p.name, p.value));
-          let result = await request.query(queryString);
-
-          count += result.rowsAffected[0];
+          count += result.rowCount ?? 0;
         }
       }
 
-      transantion.commit();
+      return count;
+    });
 
-      if (count === 0) {
-        return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
-      }
-      // 성공 정보 반환
-      return NextResponse.json({ success: true, total: excelData.length, count: count });
-    } catch (err) {
-      transantion.rollback();
-      console.error(err);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    if (count === 0) {
+      return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
     }
+    return NextResponse.json({ success: true, total: excelData.length, count: count });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
@@ -384,16 +371,16 @@ export async function POST(req: Request) {
 function ConvertExcelSerialToData(serial: number): String {
   let daysToSubtract = 1;
   if (serial > 60) {
-    daysToSubtract = 2; 
+    daysToSubtract = 2;
   }
-  
+
   const excelEpoch = new Date(Date.UTC(1900, 0, 1));
   const millisecondsPerDay = 24 * 60 * 60 * 1000;
   const dateInMilliseconds = excelEpoch.getTime() + (serial - daysToSubtract) * millisecondsPerDay;
   const convertedDate = new Date(dateInMilliseconds);
 
   const year = convertedDate.getUTCFullYear();
-  const month = convertedDate.getUTCMonth() + 1; // getUTCMonth()는 0부터 시작하므로 +1
+  const month = convertedDate.getUTCMonth() + 1;
   const day = convertedDate.getUTCDate();
 
   const formattedMonth = String(month).padStart(2, '0');

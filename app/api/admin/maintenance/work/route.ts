@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     // DB에서 데쉬보드 정보 확인
     const items: MaintenanceWork[] = await query(
       `select work_order
-            , convert(varchar(10), work_date, 121) work_date
+            , to_char(work_date, 'YYYY-MM-DD') work_date
             , vessel_no
             , equip_no
             , section_code

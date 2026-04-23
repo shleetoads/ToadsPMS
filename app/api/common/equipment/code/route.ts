@@ -13,7 +13,7 @@ export async function GET(req: Request) {
             , equip_no
             , equip_name
             , machine_name
-         from [equipment]
+         from equipment
         where vessel_no = @vesselNo`,
       [
         { name: 'vesselNo', value: vesselNo }

@@ -24,14 +24,14 @@ export async function GET(req: Request) {
             , a.self_maintenance
             , a.manager
             , a.critical
-            , convert(varchar(10), a.lastest_date, 121) as lastest_date
-            , convert(varchar(10), a.due_date, 121) as due_date
-            , convert(varchar(10), a.extension_date, 121) as extension_date
-            , convert(varchar(10), case when a.due_date < getdate() and a.extension_date is null then dateadd(day, -1, getdate()) 
-                                        when a.due_date < getdate() and a.extension_date is not null and a.extension_date > getdate() then a.extension_date
-                                        else a.due_date end, 121) as calendar_date
-            , case when a.due_date < getdate() and a.lastest_date < getdate() and a.extension_date >= getdate() then 'EXTENSION'
-			             when a.due_date < getdate() then 'DELAYED' 
+            , to_char(a.lastest_date, 'YYYY-MM-DD') as lastest_date
+            , to_char(a.due_date, 'YYYY-MM-DD') as due_date
+            , to_char(a.extension_date, 'YYYY-MM-DD') as extension_date
+            , to_char(case when a.due_date < now()::timestamp and a.extension_date is null then (now()::timestamp + make_interval(days => -1))
+                                        when a.due_date < now()::timestamp and a.extension_date is not null and a.extension_date > now()::timestamp then a.extension_date
+                                        else a.due_date end, 'YYYY-MM-DD') as calendar_date
+            , case when a.due_date < now()::timestamp and a.lastest_date < now()::timestamp and a.extension_date >= now()::timestamp then 'EXTENSION'
+			             when a.due_date < now()::timestamp then 'DELAYED' 
                    else 'NORMAL' end as status
          from (select a.vessel_no
                     , c.equip_no
@@ -47,23 +47,23 @@ export async function GET(req: Request) {
                     , a.manager
                     , a.critical
                     , a.lastest_date
-                    , case a.interval_term when 'YEAR' then dateadd(year, a.interval, a.lastest_date)
-                                           when 'MONTH' then dateadd(month, a.interval, a.lastest_date)
-                                           when 'DAY' then dateadd(day, a.interval, a.lastest_date)
-                                           when 'HOURS' then dateadd(day, a.interval / 24, a.lastest_date) end as due_date
-                    , dbo.fn_get_maintenance_extension(a.vessel_no, a.equip_no, a.section_code, a.plan_code) as extension_date
-                 from [maintenance_plan] as a
-                inner join [section] as b
+                    , case a.interval_term when 'YEAR' then (a.lastest_date + make_interval(years => a.interval))
+                                           when 'MONTH' then (a.lastest_date + make_interval(months => a.interval))
+                                           when 'DAY' then (a.lastest_date + make_interval(days => a.interval))
+                                           when 'HOURS' then (a.lastest_date + make_interval(days => (a.interval / 24))) end as due_date
+                    , public.fn_get_maintenance_extension(a.vessel_no, a.equip_no, a.section_code, a.plan_code) as extension_date
+                 from maintenance_plan as a
+                inner join section as b
                    on a.vessel_no = b.vessel_no
                   and a.equip_no = b.equip_no
                   and a.section_code = b.section_code
-                inner join [equipment] as c
+                inner join equipment as c
                    on b.vessel_no = c.vessel_no
                   and b.equip_no = c.equip_no
                 where a.vessel_no = @vesselNo) as a
-        where (a.due_date < getdate() or (a.due_date >= getdate() and a.due_date <= dateadd(day, 90, getdate())))
-          and (a.extension_date is null or (a.extension_date >= getdate() and a.extension_date <= dateadd(day, 90, getdate())))
-        order by a.vessel_no, a.equip_no, convert(varchar(10), case when a.due_date < getdate() then dateadd(day, -1, getdate()) else a.due_date end, 121), a.section_code, a.plan_code`,
+        where (a.due_date < now()::timestamp or (a.due_date >= now()::timestamp and a.due_date <= (now()::timestamp + make_interval(days => 90))))
+          and (a.extension_date is null or (a.extension_date >= now()::timestamp and a.extension_date <= (now()::timestamp + make_interval(days => 90))))
+        order by a.vessel_no, a.equip_no, to_char(case when a.due_date < now()::timestamp then (now()::timestamp + make_interval(days => -1)) else a.due_date end, 'YYYY-MM-DD'), a.section_code, a.plan_code`,
       [
         { name: 'vesselNo', value: vesselNo }
       ]

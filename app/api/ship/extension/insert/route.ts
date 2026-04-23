@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const item : MaintenanceExtension = body;
 
     let count = await execute(`
-      insert into [maintenance_extension] (
+      insert into maintenance_extension (
             vessel_no
           , equip_no
           , section_code
@@ -28,18 +28,18 @@ export async function POST(req: Request) {
           , @equipNo
           , @sectionCode
           , @planCode
-          , (select isnull(max(extension_seq), 0) + 1 
-                from [maintenance_extension] 
+          , (select coalesce(max(extension_seq), 0) + 1 
+                from maintenance_extension 
               where vessel_no = @vesselNo
                 and equip_no = @equipNo
                 and section_code = @sectionCode
                 and plan_code = @planCode)
           , @extensionDate
           , @extensionReason
-          , getdate()
+          , now()::timestamp
           , @applicant
           , 'REQUEST'
-          , getdate()
+          , now()::timestamp
           , @registUser
       );`,
       [
@@ -72,13 +72,13 @@ export async function POST(req: Request) {
             , approval_status
             , regist_date
             , regist_user
-          from [maintenance_extension]
+          from maintenance_extension
         where vessel_no = @vesselNo
           and equip_no = @equipNo
           and section_code = @sectionCode
           and plan_code = @planCode
           and extension_seq = (select max(extension_seq) 
-                                  from [maintenance_extension]
+                                  from maintenance_extension
                                 where vessel_no = @vesselNo
                                   and equip_no = @equipNo
                                   and section_code = @sectionCode
@@ -106,8 +106,8 @@ export async function POST(req: Request) {
         if (res.ok) {
           // 정비 정보의 마지막 전송일자 수정
           execute(
-            `update [maintenance_extension]
-                set last_send_date = getdate()
+            `update maintenance_extension
+                set last_send_date = now()::timestamp
               where vessel_no = @vesselNo
                 and equip_no = @equipNo
                 and section_code = @sectionCode

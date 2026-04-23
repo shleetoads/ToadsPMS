@@ -1,0 +1,47 @@
+# 의존성·빌드 산출물
+node_modules
+.next
+out
+build
+
+# Git·CI
+.git
+.gitignore
+.github
+
+# 문서·로그·IDE
+MD/
+logs/
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log
+
+# 민감 파일 전역 제외 (시크릿 이미지 유입 차단)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# 베어메탈 배포용 (컨테이너 불필요)
+ecosystem.config.js
+
+# 환경별 설정은 ECS Task env로 주입하므로 이미지 불필요
+project-config/
+
+# Docker 자체
+Dockerfile*
+.dockerignore
+
+# 프로젝트 문서
+README*
+*.md
+
+# Claude Code
+.claude/
+
+# 기타 패키지 매니저
+pnpm-lock.yaml
+yarn.lock
+.pnpm-store

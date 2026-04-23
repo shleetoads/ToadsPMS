@@ -10,10 +10,10 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `update [warehouse]
+      `update warehouse
           set warehouse_name = @warehouseName
             , warehouse_location = @warehouseLocation
-            , modify_date = getdate()
+            , modify_date = now()::timestamp
             , modify_user = @modifyUser
         where vessel_no = @vesselNo
           and warehouse_no = @warehouseNo;`,
@@ -42,8 +42,8 @@ export async function POST(req: Request) {
       if (res.ok) {
         // 창고 정보의 마지막 전송일자 수정
         execute(
-          `update [warehouse]
-              set last_send_date = getdate()
+          `update warehouse
+              set last_send_date = now()::timestamp
             where vessel_no = @vesselNo
               and warehouse_no = @warehouseNo;`,
           [

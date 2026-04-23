@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const items: Transactions[] = await query(
       `select a.vessel_no
             , b.vessel_name
-            , convert(varchar(10), a.date, 121) as date
+            , to_char(a.date, 'YYYY-MM-DD') as date
             , a.type
             , a.no
             , a.material_code
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
             , a.qty
             , a.reason
             , a.regist_user
-            , dbo.fn_get_user(a.regist_user) as registrant
+            , public.fn_get_user(a.regist_user) as registrant
          from (select vessel_no
                     , release_no as no
                     , material_code
@@ -30,12 +30,12 @@ export async function POST(req: Request) {
                     , release_type as type
                     , release_unit as unit
                     , release_qty as qty
-                    , isnull(release_location, '') as location
+                    , coalesce(release_location, '') as location
                     , '' as reason
                     , release_remark as remark
                	   , regist_user
-                 from [release]
-                where release_date between convert(varchar(10), @startDate, 121) and convert(varchar(10), @endDate, 121)
+                 from "release"
+                where release_date between to_char(@startDate, 'YYYY-MM-DD') and to_char(@endDate, 'YYYY-MM-DD')
                   and release_type in ('O0', 'AO')
                union all
                select vessel_no
@@ -45,12 +45,12 @@ export async function POST(req: Request) {
                     , receive_type
                     , receive_unit
                     , receive_qty
-                    , isnull(receive_location, '')
+                    , coalesce(receive_location, '')
                     , ''
                     , receive_remark
                	    , regist_user
-                 from [receive]
-                where receive_date between convert(varchar(10), @startDate, 121) and convert(varchar(10), @endDate, 121)
+                 from receive
+                where receive_date between to_char(@startDate, 'YYYY-MM-DD') and to_char(@endDate, 'YYYY-MM-DD')
                   and receive_type in ('I0', 'AI')
                union all
                select vessel_no
@@ -60,21 +60,21 @@ export async function POST(req: Request) {
                     , loss_type
                     , loss_unit
                     , loss_qty
-                    , isnull(loss_location, '')
+                    , coalesce(loss_location, '')
                     , loss_reason
                     , loss_remark
                	    , regist_user
-                 from [loss]
-                where loss_date between convert(varchar(10), @startDate, 121) and convert(varchar(10), @endDate, 121)) as a
+                 from loss
+                where loss_date between to_char(@startDate, 'YYYY-MM-DD') and to_char(@endDate, 'YYYY-MM-DD')) as a
         inner join vessel as b
            on a.vessel_no = b.vessel_no
         inner join material as c
            on a.vessel_no = c.vessel_no
           and a.material_code = c.material_code
-        where a.vessel_no like case @vesselNo when 'all' then '' else @vesselNo end + '%'
-          and c.machine_name like case @machineName when 'all' then '' else @machineName end + '%'
-          and a.location like case @location when 'all' then '' else @location end + '%'
-          and a.type like case @type when 'all' then '' else @type end + '%'
+        where a.vessel_no like case @vesselNo when 'all' then '' else @vesselNo end || '%'
+          and c.machine_name like case @machineName when 'all' then '' else @machineName end || '%'
+          and a.location like case @location when 'all' then '' else @location end || '%'
+          and a.type like case @type when 'all' then '' else @type end || '%'
         order by a.vessel_no
                , a.date
                , a.type

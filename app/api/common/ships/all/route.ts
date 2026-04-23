@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     // DB에서 사용자 정보 확인
     const items: Vessel[] = await query(
       `select vessel_no, vessel_name, imo_no, vessel_short_name, use_yn 
-         from [vessel]
+         from vessel
         where use_yn = 'Y'`
     );
 

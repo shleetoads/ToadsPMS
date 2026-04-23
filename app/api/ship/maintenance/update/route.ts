@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `update [maintenance_plan] 
+      `update maintenance_plan 
           set plan_name = @planName
             , manufacturer = @manufacturer
             , model = @model
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
             , important_items = @importantItems
             , instructions = @instructions
             , critical = @critical
-            , modify_date = getdate()
+            , modify_date = now()::timestamp
             , modify_user = @modifyUser
         where vessel_no = @vesselNo 
           and equip_no = @equipNo 
@@ -72,8 +72,8 @@ export async function POST(req: Request) {
       if (res.ok) {
         // 정비 정보의 마지막 전송일자 수정
         execute(
-          `update [maintenance_plan]
-              set last_send_date = getdate()
+          `update maintenance_plan
+              set last_send_date = now()::timestamp
             where vessel_no = @vesselNo
               and equip_no = @equipNo
               and section_code = @sectionCode

@@ -13,53 +13,53 @@ export async function GET(req: Request) {
             , a.material_name
             , a.material_unit
             , a.standard_qty
-            , convert(varchar(7), getdate(), 121) as [period]
-            , isnull(a.receive_qty, 0) as receive_qty
-            , isnull(a.release_qty, 0) as release_qty
-            , isnull(a.loss_qty, 0) as loss_qty
-            , isnull(a.total_receive_qty, 0) - (isnull(a.total_release_qty, 0) + isnull(a.total_loss_qty, 0)) as stock_qty
+            , to_char(now()::timestamp, 'YYYY-MM') as period
+            , coalesce(a.receive_qty, 0) as receive_qty
+            , coalesce(a.release_qty, 0) as release_qty
+            , coalesce(a.loss_qty, 0) as loss_qty
+            , coalesce(a.total_receive_qty, 0) - (coalesce(a.total_release_qty, 0) + coalesce(a.total_loss_qty, 0)) as stock_qty
          from (select a.vessel_no
                     , a.vessel_name
                     , b.machine_name
-                    , isnull(c.sort_no, 999) as sort_no
+                    , coalesce(c.sort_no, 999) as sort_no
                     , b.material_code
                     , b.material_name
                     , b.material_unit
-                    , isnull(b.standard_qty, 0) as standard_qty
-                    , (select sum(isnull(receive_qty, 0))
-                         from [receive]
+                    , coalesce(b.standard_qty, 0) as standard_qty
+                    , (select sum(coalesce(receive_qty, 0))
+                         from receive
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and receive_date >= dateadd(mm, datediff(mm, 0, getdate()), 0) and receive_date < dateadd(mm, datediff(mm, 0, getdate()) + 1, 0)) as receive_qty
-                    , (select sum(isnull(release_qty, 0))
-                         from [release]
+                          and receive_date >= date_trunc('month', now())::timestamp and receive_date < (date_trunc('month', now()) + interval '1 month')::timestamp) as receive_qty
+                    , (select sum(coalesce(release_qty, 0))
+                         from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and release_date >= dateadd(mm, datediff(mm, 0, getdate()), 0) and release_date < dateadd(mm, datediff(mm, 0, getdate()) + 1, 0)) as release_qty
-                    , (select sum(isnull(loss_qty, 0))
-                         from [loss]
+                          and release_date >= date_trunc('month', now())::timestamp and release_date < (date_trunc('month', now()) + interval '1 month')::timestamp) as release_qty
+                    , (select sum(coalesce(loss_qty, 0))
+                         from loss
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and loss_date >= dateadd(mm, datediff(mm, 0, getdate()), 0) and loss_date < dateadd(mm, datediff(mm, 0, getdate()) + 1, 0)) as loss_qty
-                    , (select sum(isnull(receive_qty, 0))
-                         from [receive]
+                          and loss_date >= date_trunc('month', now())::timestamp and loss_date < (date_trunc('month', now()) + interval '1 month')::timestamp) as loss_qty
+                    , (select sum(coalesce(receive_qty, 0))
+                         from receive
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as total_receive_qty
-                    , (select sum(isnull(release_qty, 0))
-                         from [release]
+                    , (select sum(coalesce(release_qty, 0))
+                         from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as total_release_qty
-                    , (select sum(isnull(loss_qty, 0))
-                         from [loss]
+                    , (select sum(coalesce(loss_qty, 0))
+                         from loss
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as total_loss_qty
-                 from [vessel] as a
-                 left outer join [material] as b
+                 from vessel as a
+                 left outer join material as b
                    on a.vessel_no = b.vessel_no
-                 left outer join [machine] as c
+                 left outer join machine as c
                    on b.vessel_no = c.vessel_no
                   and b.machine_name = c.machine_name
-                 left outer join [warehouse] as d
+                 left outer join warehouse as d
                    on b.vessel_no = d.vessel_no
                   and b.warehouse_no = d.warehouse_no
                 where a.use_yn = 'Y') as a

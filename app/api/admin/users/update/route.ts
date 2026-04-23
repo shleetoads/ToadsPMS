@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `update [user]
+      `update "user"
           set user_name = @userName
             , user_ename = @userEname
             , email = @email
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
             , ship_no = @shipNo
             , user_auth = @userAuth
             , use_yn = @useYn
-            , modify_date = getdate()
+            , modify_date = now()::timestamp
             , modify_user = @modifyUser
         where account_no = @accountNo;`,
       [

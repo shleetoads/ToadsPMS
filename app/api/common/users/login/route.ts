@@ -18,11 +18,11 @@ export async function POST(req: Request) {
             , b.vessel_name as ship_name
             , a.position
             , a.user_auth 
-         from [user] as a
-         left outer join [vessel] as b
+         from "user" as a
+         left outer join vessel as b
            on a.ship_no = b.vessel_no
-        where email = @email 
-          and password = convert(varchar(max), @password)`,
+        where email = @email
+          and password = @password::bytea`,
       [
         { name: 'email', value: email },
         { name: 'password', value: password }

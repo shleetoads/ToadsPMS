@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [warehouse] (
+      `insert into warehouse (
               vessel_no
             , warehouse_no
             , warehouse_name
@@ -21,13 +21,13 @@ export async function POST(req: Request) {
       )
       values (
               @vesselNo
-            , (select 'W' + format(isnull(right(max(warehouse_no), 3), 0) + 1, '000') 
-                 from [warehouse] 
+            , (select 'W' || lpad((coalesce(right(max(warehouse_no), 3)::int, 0) + 1)::text, 3, '0') 
+                 from warehouse 
                 where vessel_no = @vesselNo)
             , @warehouseName
             , @warehouseLocation
             , 'Y'
-            , getdate()
+            , now()::timestamp
             , @registUser
       );`,
       [
@@ -51,10 +51,10 @@ export async function POST(req: Request) {
             , use_yn
             , regist_date
             , regist_user
-         from [warehouse]
+         from warehouse
         where vessel_no = @vesselNo
           and warehouse_no = (select max(warehouse_no) 
-                                from [warehouse]
+                                from warehouse
                                where vessel_no = @vesselNo
                                  and regist_user = @registUser);`,
       [
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
       if (fetchResponse.ok) {
         // 창고 정보의 마지막 전송일자 수정
         execute(
-          `update [warehouse]
-              set last_send_date = getdate()
+          `update warehouse
+              set last_send_date = now()::timestamp
             where vessel_no = @vesselNo
               and warehouse_no = @warehouseNo;`,
           [

@@ -16,35 +16,35 @@ export async function GET(req: Request) {
             , a.plan_code
             , b.plan_name
             , a.extension_seq
-            , convert(varchar(10), a.extension_date, 121) as extension_date
+            , to_char(a.extension_date, 'YYYY-MM-DD') as extension_date
             , a.extension_reason
-            , convert(varchar(10), a.request_date, 121) as request_date
+            , to_char(a.request_date, 'YYYY-MM-DD') as request_date
             , a.applicant
-            , dbo.fn_get_user(a.applicant) as applicant_name
+            , public.fn_get_user(a.applicant) as applicant_name
             , a.approval_status
-            , convert(varchar(10), a.approval_date, 121) as approval_date
+            , to_char(a.approval_date, 'YYYY-MM-DD') as approval_date
             , a.approver
-            , dbo.fn_get_user(a.approver) as approver_name
+            , public.fn_get_user(a.approver) as approver_name
             , a.approval_reason
-            , convert(varchar(10), b.lastest_date, 121) as lastest_date
-            , convert(varchar(10), case b.interval_term when 'YEAR' then dateadd(year, b.interval, b.lastest_date)
-                                                        when 'MONTH' then dateadd(month, b.interval, b.lastest_date)
-                                                        when 'DAY' then dateadd(day, b.interval, b.lastest_date)
-                                                        when 'HOURS' then dateadd(day, b.interval / 24, b.lastest_date) end, 121) as due_date
-         from [maintenance_extension] as a
-        inner join [maintenance_plan] as b
+            , to_char(b.lastest_date, 'YYYY-MM-DD') as lastest_date
+            , to_char( case b.interval_term when 'YEAR' then (b.lastest_date + make_interval(years => b.interval))
+                                                        when 'MONTH' then (b.lastest_date + make_interval(months => b.interval))
+                                                        when 'DAY' then (b.lastest_date + make_interval(days => b.interval))
+                                                        when 'HOURS' then (b.lastest_date + make_interval(days => (b.interval / 24))) end, 'YYYY-MM-DD') as due_date
+         from maintenance_extension as a
+        inner join maintenance_plan as b
            on a.vessel_no = b.vessel_no
           and a.equip_no = b.equip_no
           and a.section_code = b.section_code
           and a.plan_code = b.plan_code
-        inner join [section] as c
+        inner join section as c
            on b.vessel_no = c.vessel_no
           and b.equip_no = c.equip_no
           and b.section_code = c.section_code
-        inner join [equipment] as d
+        inner join equipment as d
            on c.vessel_no = d.vessel_no
           and c.equip_no = d.equip_no
-        inner join [vessel] as e
+        inner join vessel as e
            on b.vessel_no = e.vessel_no
         where e.use_yn = 'Y'
         order by a.vessel_no, d.machine_name, a.equip_no, a.section_code, a.plan_code, a.extension_seq`

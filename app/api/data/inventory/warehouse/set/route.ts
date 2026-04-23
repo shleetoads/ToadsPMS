@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [warehouse] as a
+      `merge warehouse as a
        using (select @vesselNo as vessel_no
                    , @warehouseNo as warehouse_no
                    , @warehouseName as warehouse_name
@@ -23,12 +23,12 @@ export async function POST(req: Request) {
           and a.warehouse_no = b.warehouse_no)
         when matched then
              update
-                set a.warehouse_name = b.warehouse_name
-                  , a.warehouse_location = b.warehouse_location
-                  , a.use_yn = b.use_yn
-                  , a.last_receive_date = getdate()
-                  , a.modify_date = b.modify_date
-                  , a.modify_user = b.modify_user
+                set warehouse_name = b.warehouse_name
+                  , warehouse_location = b.warehouse_location
+                  , use_yn = b.use_yn
+                  , last_receive_date = now()::timestamp
+                  , modify_date = b.modify_date
+                  , modify_user = b.modify_user
         when not matched then
              insert (vessel_no
                    , warehouse_no
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
                    , b.warehouse_name
                    , b.warehouse_location
                    , b.use_yn
-                   , getdate()
+                   , now()::timestamp
                    , b.regist_date
                    , b.regist_user);`,
       [

@@ -21,25 +21,25 @@ export async function GET(req: Request) {
             , b.material_unit
             , b.drawing_no
             , b.warehouse_no
-            , isnull(e.warehouse_name, '') as warehouse_name
+            , coalesce(e.warehouse_name, '') as warehouse_name
             , b.standard_qty
-            , isnull(d.receive_qty, 0) as initial_stock
-         from [vessel] as a
-         left outer join [material] as b
+            , coalesce(d.receive_qty, 0) as initial_stock
+         from vessel as a
+         left outer join material as b
            on a.vessel_no = b.vessel_no
-         left outer join [machine] as c
+         left outer join machine as c
            on b.vessel_no = c.vessel_no
           and b.machine_name = c.machine_name
-         left outer join [receive] as d
+         left outer join receive as d
            on b.vessel_no = d.vessel_no
           and b.material_code = d.material_code
           and d.receive_type = 'S0'
-         left outer join [warehouse] as e
+         left outer join warehouse as e
            on b.vessel_no = e.vessel_no
           and b.warehouse_no = e.warehouse_no
         where a.vessel_no = @vesselNo
           and a.use_yn = 'Y'
-        order by a.vessel_no, isnull(c.sort_no, 999), b.machine_name, b.material_code;`,
+        order by a.vessel_no, coalesce(c.sort_no, 999), b.machine_name, b.material_code;`,
       [
         { name: 'vesselNo', value: vesselNo }
       ]

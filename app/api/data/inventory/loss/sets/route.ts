@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSql, getPool, query, execute } from '@/db'; // 이전에 만든 query 함수
+import { withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { Loss } from '@/types/inventory/loss/loss';
 
 export async function POST(req: Request) {
@@ -7,17 +7,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const items : Loss[] = body;
 
-    const sql = await getSql();
-    const pool = await getPool();
-    const transantion = pool.transaction();
-    await transantion.begin();
-    try {
-      let count = 0;
+    const count = await withTransaction(async (client) => {
+      let total = 0;
       for (const item of items) {
-        // DB에서 사용자 정보 확인
-
-        let queryString = 
-        `merge [loss] as a
+        const queryString =
+        `merge loss as a
         using (select @vesselNo as vessel_no
                     , @lossNo as loss_no
                     , @materialCode as material_code
@@ -31,20 +25,20 @@ export async function POST(req: Request) {
                     , @registUser as regist_user
                     , @modifyDate as modify_date
                     , @modifyUser as modify_user) as b
-            on (a.vessel_no = b.vessel_no 
-            and a.lossNo = b.lossNo)
+            on (a.vessel_no = b.vessel_no
+            and a.loss_no = b.loss_no)
           when matched then
               update
-                  set a.material_code = b.material_code
-                    , a.loss_date = b.loss_date
-                    , a.loss_type = b.loss_type
-                    , a.loss_unit = b.loss_unit
-                    , a.loss_qty = b.loss_qty
-                    , a.loss_location = b.loss_location
-                    , a.loss_reason = b.loss_reason
-                    , a.last_receive_date = getdate()
-                    , a.modify_date = b.modify_date
-                    , a.modify_user = b.modify_user
+                  set material_code = b.material_code
+                    , loss_date = b.loss_date
+                    , loss_type = b.loss_type
+                    , loss_unit = b.loss_unit
+                    , loss_qty = b.loss_qty
+                    , loss_location = b.loss_location
+                    , loss_reason = b.loss_reason
+                    , last_receive_date = now()::timestamp
+                    , modify_date = b.modify_date
+                    , modify_user = b.modify_user
           when not matched then
               insert (vessel_no
                     , loss_no
@@ -67,46 +61,39 @@ export async function POST(req: Request) {
                     , b.loss_qty
                     , b.loss_location
                     , b.loss_reason
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_date
-                    , b.regist_user);`
+                    , b.regist_user);`;
 
-        let params = [
-          { name: 'vesselNo', value: item.vessel_no }, 
-          { name: 'lossNo', value: item.loss_no }, 
-          { name: 'materialCode', value: item.material_code }, 
-          { name: 'lossDate', value: item.loss_date }, 
-          { name: 'lossType', value: item.loss_type }, 
-          { name: 'lossUnit', value: item.loss_unit }, 
-          { name: 'lossQty', value: item.loss_qty }, 
-          { name: 'lossLocation', value: item.loss_location }, 
-          { name: 'lossReason', value: item.loss_reason }, 
-          { name: 'registDate', value: item.regist_date }, 
-          { name: 'registUser', value: item.regist_user }, 
-          { name: 'modifyDate', value: item.modify_date }, 
-          { name: 'modifyUser', value: item.modify_user }, 
+        const params: NamedParam[] = [
+          { name: 'vesselNo', value: item.vessel_no },
+          { name: 'lossNo', value: item.loss_no },
+          { name: 'materialCode', value: item.material_code },
+          { name: 'lossDate', value: item.loss_date },
+          { name: 'lossType', value: item.loss_type },
+          { name: 'lossUnit', value: item.loss_unit },
+          { name: 'lossQty', value: item.loss_qty },
+          { name: 'lossLocation', value: item.loss_location },
+          { name: 'lossReason', value: item.loss_reason },
+          { name: 'registDate', value: item.regist_date },
+          { name: 'registUser', value: item.regist_user },
+          { name: 'modifyDate', value: item.modify_date },
+          { name: 'modifyUser', value: item.modify_user },
         ];
 
-        const request = new sql.Request(transantion);
-
-        params?.forEach(p => request.input(p.name, p.value));
-        let result = await request.query(queryString);
-        count += result.rowsAffected[0];
+        const { text, values } = adaptNamedParams(queryString, params);
+        const result = await client.query(text, values);
+        total += result.rowCount ?? 0;
       }
+      return total;
+    });
 
-      transantion.commit();
-
-      if (count === 0) {
-        return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
-      }
-
-      // 성공 정보 반환
-      return NextResponse.json({ success: true });
-    } catch (err) {
-      transantion.rollback();
-      console.error(err);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    if (count === 0) {
+      return NextResponse.json({ success: false, message: 'Data was not inserted.' }, { status: 401 });
     }
+
+    // 성공 정보 반환
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

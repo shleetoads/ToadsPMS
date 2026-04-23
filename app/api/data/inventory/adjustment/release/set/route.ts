@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [release] as a
+      `merge "release" as a
        using (select @vesselNo as vessel_no
                    , @adjustmentNo as release_no
                    , @materialCode as material_code
@@ -27,16 +27,16 @@ export async function POST(req: Request) {
           and a.release_no = b.release_no)
         when matched then
              update
-                set a.material_code = b.material_code
-                  , a.release_date = b.release_date
-                  , a.release_type = b.release_type
-                  , a.release_unit = b.release_unit
-                  , a.release_qty = b.release_qty
-                  , a.release_location = b.release_location
-                  , a.release_reason = b.release_reason
-                  , a.last_receive_date = getdate()
-                  , a.modify_date = b.modify_date
-                  , a.modify_user = b.modify_user
+                set material_code = b.material_code
+                  , release_date = b.release_date
+                  , release_type = b.release_type
+                  , release_unit = b.release_unit
+                  , release_qty = b.release_qty
+                  , release_location = b.release_location
+                  , release_reason = b.release_reason
+                  , last_receive_date = now()::timestamp
+                  , modify_date = b.modify_date
+                  , modify_user = b.modify_user
         when not matched then
              insert (vessel_no
                    , release_no
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
                    , b.release_qty
                    , b.release_location
                    , b.release_reason
-                   , getdate()
+                   , now()::timestamp
                    , b.regist_date
                    , b.regist_user);`,
       [

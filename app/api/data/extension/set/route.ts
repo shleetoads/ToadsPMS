@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const item : MaintenanceExtension = body;
 
     let count = await execute(`
-      insert into [maintenance_extension] (
+      insert into maintenance_extension (
               vessel_no
             , equip_no
             , section_code
@@ -31,11 +31,11 @@ export async function POST(req: Request) {
             , @extensionSeq
             , @extensionDate
             , @extensionReason
-            , getdate()
+            , now()::timestamp
             , @applicant
             , 'R'
-            , getdate()
-            , getdate()
+            , now()::timestamp
+            , now()::timestamp
             , @registUser
       );`, 
       [

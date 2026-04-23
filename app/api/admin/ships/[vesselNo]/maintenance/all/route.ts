@@ -17,7 +17,7 @@ export async function GET(req: Request) {
             , manufacturer
             , model
             , specifications
-            , convert(varchar(10), lastest_date, 121) as lastest_date
+            , to_char(lastest_date, 'YYYY-MM-DD') as lastest_date
             , workers
             , work_hours
             , interval
@@ -28,11 +28,11 @@ export async function GET(req: Request) {
             , important_items
             , instructions
             , critical
-            , convert(varchar(10), case interval_term when 'YEAR' then dateadd(year, interval, lastest_date)
-                                                      when 'MONTH' then dateadd(month, interval, lastest_date)
-                                                      when 'DAY' then dateadd(day, interval, lastest_date)
-                                                      when 'HOURS' then dateadd(day, interval / 24, lastest_date) end, 121) as due_date
-         from [maintenance_plan]
+            , to_char( case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
+                                                      when 'MONTH' then (lastest_date + make_interval(months => interval))
+                                                      when 'DAY' then (lastest_date + make_interval(days => interval))
+                                                      when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end, 'YYYY-MM-DD') as due_date
+         from maintenance_plan
         where vessel_no = @vesselNo`,
       [
         { name: 'vesselNo', value: vesselNo }

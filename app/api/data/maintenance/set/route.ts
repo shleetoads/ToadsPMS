@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [maintenance_plan] as a
+      `merge maintenance_plan as a
        using (select @vesselNo as vessel_no
                    , @equipNo as equip_no
                    , @sectionCode as section_code
@@ -37,24 +37,24 @@ export async function POST(req: Request) {
           and a.plan_code = b.plan_code)
         when matched then
              update
-                set a.plan_name = b.plan_name
-                  , a.manufacturer = b.manufacturer
-                  , a.model = b.model
-                  , a.specifications = b.specifications
-                  , a.lastest_date = b.lastest_date
-                  , a.workers = b.workers
-                  , a.work_hours = b.work_hours
-                  , a.interval = b.interval
-                  , a.interval_term = b.interval_term
-                  , a.location = b.location
-                  , a.self_maintenance = b.self_maintenance
-                  , a.manager = b.manager
-                  , a.important_items = b.important_items
-                  , a.instructions = b.instructions
-                  , a.critical = b.critical
-                  , a.last_receive_date = getdate()
-                  , a.modify_date = getdate()
-                  , a.modify_user = b.modify_user
+                set plan_name = b.plan_name
+                  , manufacturer = b.manufacturer
+                  , model = b.model
+                  , specifications = b.specifications
+                  , lastest_date = b.lastest_date
+                  , workers = b.workers
+                  , work_hours = b.work_hours
+                  , interval = b.interval
+                  , interval_term = b.interval_term
+                  , location = b.location
+                  , self_maintenance = b.self_maintenance
+                  , manager = b.manager
+                  , important_items = b.important_items
+                  , instructions = b.instructions
+                  , critical = b.critical
+                  , last_receive_date = now()::timestamp
+                  , modify_date = now()::timestamp
+                  , modify_user = b.modify_user
         when not matched then
              insert (vessel_no
                    , equip_no
@@ -97,8 +97,8 @@ export async function POST(req: Request) {
                    , b.important_items
                    , b.instructions
                    , b.critical
-                   , getdate()
-                   , getdate()
+                   , now()::timestamp
+                   , now()::timestamp
                    , b.regist_user);`,
       [
         { name: 'vesselNo', value: item.vessel_no },

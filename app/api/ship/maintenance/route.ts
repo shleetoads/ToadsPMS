@@ -27,7 +27,7 @@ export async function GET(req: Request) {
             , c.manufacturer
             , c.model
             , c.specifications
-            , convert(varchar(10), c.lastest_date, 121) as lastest_date
+            , to_char(c.lastest_date, 'YYYY-MM-DD') as lastest_date
             , c.workers
             , c.work_hours
             , c.interval
@@ -38,23 +38,23 @@ export async function GET(req: Request) {
             , c.important_items
             , c.instructions
             , c.critical
-            , convert(varchar(10), case c.interval_term when 'YEAR' then dateadd(year, c.interval, c.lastest_date)
-                                                        when 'MONTH' then dateadd(month, c.interval, c.lastest_date)
-                                                        when 'DAY' then dateadd(day, c.interval, c.lastest_date)
-                                                        when 'HOURS' then dateadd(day, c.interval / 24, c.lastest_date) end, 121) as due_date
-         from [equipment] as a
-         left outer join [machine] as z
+            , to_char( case c.interval_term when 'YEAR' then (c.lastest_date + make_interval(years => c.interval))
+                                                        when 'MONTH' then (c.lastest_date + make_interval(months => c.interval))
+                                                        when 'DAY' then (c.lastest_date + make_interval(days => c.interval))
+                                                        when 'HOURS' then (c.lastest_date + make_interval(days => (c.interval / 24))) end, 'YYYY-MM-DD') as due_date
+         from equipment as a
+         left outer join machine as z
            on a.vessel_no = z.vessel_no
           and a.machine_name = z.machine_name
-         left outer join [section] as b
+         left outer join section as b
            on a.vessel_no = b.vessel_no
           and a.equip_no = b.equip_no
-         left outer join [maintenance_plan] as c
+         left outer join maintenance_plan as c
            on b.vessel_no = c.vessel_no
           and b.equip_no = c.equip_no
           and b.section_code = c.section_code
         where a.vessel_no = @vesselNo
-        order by a.vessel_no, isnull(z.sort_no, 999), a.equip_no, b.section_code, c.plan_code`,
+        order by a.vessel_no, coalesce(z.sort_no, 999), a.equip_no, b.section_code, c.plan_code`,
       [
         { name: 'vesselNo', value: vesselNo }
       ]

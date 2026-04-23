@@ -11,10 +11,10 @@ export async function GET(req: Request) {
     const items: Machine[] = await query(
       `select a.vessel_no
             , a.machine_name
-         from [machine] as a
+         from machine as a
         where exists (select 1
-                        from [equipment] as b
-                       inner join [maintenance_extension] as c
+                        from equipment as b
+                       inner join maintenance_extension as c
                           on b.vessel_no = c.vessel_no
                          and b.equip_no = c.equip_no
                        where b.vessel_no = a.vessel_no

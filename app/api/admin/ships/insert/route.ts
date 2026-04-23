@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [vessel] (
+      `insert into vessel (
               vessel_no
             , vessel_name
             , vessel_short_name
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
             , @vesselShortName
             , @imoNo
             , @useYn
-            , getdate()
+            , now()::timestamp
             , @registUser
        );`,
       [

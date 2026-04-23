@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [equipment] (
+      `insert into equipment (
                vessel_no
              , equip_no
              , equip_name
@@ -23,13 +23,13 @@ export async function POST(req: Request) {
        )
        values (
                @vesselNo
-             , (select format(isnull(max(equip_no), 0) + 1, '00') from [equipment] where vessel_no = @vesselNo)
+             , (select lpad((coalesce(max(equip_no), 0) + 1)::text, 2, '0') from equipment where vessel_no = @vesselNo)
              , @equipName
              , @category
              , @manufacturer
              , @model
              , @description
-             , getdate()
+             , now()::timestamp
              , @registUser
        );`,
       [
@@ -59,10 +59,10 @@ export async function POST(req: Request) {
             , description
             , regist_date
             , regist_user
-         from [equipment]
+         from equipment
         where vessel_no = @vesselNo
           and equip_no = (select max(equip_no) 
-                            from [equipment]
+                            from equipment
                            where vessel_no = @vesselNo
                              and registUser = @registUser);`,
       [
@@ -84,8 +84,8 @@ export async function POST(req: Request) {
         if (res.ok) {
           // 장비 정보의 마지막 전송일자 수정
           execute(
-            `update [equipment]
-                set last_send_date = getdate()
+            `update equipment
+                set last_send_date = now()::timestamp
               where vessel_no = @vesselNo
                 and equip_no = @equipNo;`,
             [

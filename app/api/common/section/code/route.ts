@@ -14,8 +14,8 @@ export async function GET(req: Request) {
             , b.machine_name
             , a.section_code
             , a.section_name
-         from [section] as a
-        inner join [equipment] as b
+         from section as a
+        inner join equipment as b
            on a.vessel_no = b.vessel_no
           and a.equip_no = b.equip_no
         where a.vessel_no = @vesselNo`,

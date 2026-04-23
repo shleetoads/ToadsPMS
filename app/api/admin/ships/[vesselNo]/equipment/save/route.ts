@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `merge [equipment] as a
+      `merge equipment as a
         using (select @vesselNo as vessel_no
                     , @equipNo as equip_no
                     , @equipName as equip_name
@@ -22,13 +22,13 @@ export async function POST(req: Request) {
           on (a.vessel_no = b.vessel_no and a.equip_no = b.equip_no)
         when matched then
               update
-                set a.equip_name = b.equip_name
-                  , a.category = b.category
-                  , a.manufacturer = b.manufacturer
-                  , a.model = b.model
-                  , a.description = b.description
-                  , a.modify_date = getdate()
-                  , a.modify_user = b.modify_user
+                set equip_name = b.equip_name
+                  , category = b.category
+                  , manufacturer = b.manufacturer
+                  , model = b.model
+                  , description = b.description
+                  , modify_date = now()::timestamp
+                  , modify_user = b.modify_user
         when not matched then
               insert (vessel_no
                     , equip_no
@@ -40,13 +40,13 @@ export async function POST(req: Request) {
                     , regist_date
                     , regist_user)
               values (b.vessel_no
-                    , (select format(isnull(max(equip_no), 0) + 1, '00') from [equipment] where vessel_no = b.vessel_no)
+                    , (select lpad((coalesce(max(equip_no), 0) + 1)::text, 2, '0') from equipment where vessel_no = b.vessel_no)
                     , b.equip_name
                     , b.category
                     , b.manufacturer
                     , b.model
                     , b.description
-                    , getdate()
+                    , now()::timestamp
                     , b.regist_user);`,
       [
         { name: 'vesselNo', value: item.vessel_no },

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `delete [warehouse]
+      `delete from warehouse
         where vessel_no = @vesselNo
           and warehouse_no = @warehouseNo;`,
       [

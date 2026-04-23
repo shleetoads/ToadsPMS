@@ -14,8 +14,8 @@ export async function GET(req: Request) {
             , a.section_code
             , a.section_name
             , a.description
-            , (select count(1) from [maintenance_plan] where vessel_no = a.vessel_no and equip_no = a.equip_no and section_code = a.section_code) as maintenance_count
-         from [section] as a
+            , (select count(1) from maintenance_plan where vessel_no = a.vessel_no and equip_no = a.equip_no and section_code = a.section_code) as maintenance_count
+         from section as a
         where a.vessel_no = @vesselNo`,
       [
         { name: 'vesselNo', value: vesselNo }

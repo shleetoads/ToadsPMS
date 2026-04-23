@@ -18,22 +18,22 @@ export async function GET(req: Request) {
             , b.material_unit
             , b.warehouse_no
             , g.warehouse_name
-            , isnull(b.standard_qty, 0) as standard_qty
-            , sum(isnull(d.receive_qty, 0)) - sum(isnull(e.release_qty, 0)) - sum(isnull(f.loss_qty, 0)) as stock_qty
+            , coalesce(b.standard_qty, 0) as standard_qty
+            , sum(coalesce(d.receive_qty, 0)) - sum(coalesce(e.release_qty, 0)) - sum(coalesce(f.loss_qty, 0)) as stock_qty
             , 0 use_qty
-         from [vessel] as a
-        inner join [material] as b
+         from vessel as a
+        inner join material as b
            on a.vessel_no = b.vessel_no
-         left outer join [receive] as d
+         left outer join receive as d
            on b.vessel_no = d.vessel_no
           and b.material_code = d.material_code
-         left outer join [release] as e
+         left outer join "release" as e
            on b.vessel_no = e.vessel_no
           and b.material_code = e.material_code
-         left outer join [loss] as f
+         left outer join loss as f
            on b.vessel_no = f.vessel_no
           and b.material_code = f.material_code
-         left outer join [warehouse] as g
+         left outer join warehouse as g
            on b.vessel_no = g.vessel_no
           and b.warehouse_no = g.warehouse_no
         where a.vessel_no = @vesselNo

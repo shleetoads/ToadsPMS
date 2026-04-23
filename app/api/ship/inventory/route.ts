@@ -15,38 +15,38 @@ export async function GET(req: Request) {
             , a.machine_name
             , a.material_code
             , a.material_name
-            , isnull(receive_qty, 0) - (isnull(release_qty, 0) + isnull(loss_qty, 0)) as stock_qty
+            , coalesce(receive_qty, 0) - (coalesce(release_qty, 0) + coalesce(loss_qty, 0)) as stock_qty
             , a.standard_qty
          from (select a.vessel_no
                     , a.vessel_name
                     , b.machine_name
                     , b.material_code
                     , b.material_name
-                    , isnull(b.standard_qty, 0) as standard_qty
-                    , (select sum(isnull(receive_qty, 0))
-                         from [receive]
+                    , coalesce(b.standard_qty, 0) as standard_qty
+                    , (select sum(coalesce(receive_qty, 0))
+                         from receive
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as receive_qty
-                    , (select sum(isnull(release_qty, 0))
-                         from [release]
+                    , (select sum(coalesce(release_qty, 0))
+                         from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as release_qty
-                    , (select sum(isnull(loss_qty, 0))
-                         from [loss]
+                    , (select sum(coalesce(loss_qty, 0))
+                         from loss
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code) as loss_qty
-                 from [vessel] as a
-                 left outer join [material] as b
+                 from vessel as a
+                 left outer join material as b
                    on a.vessel_no = b.vessel_no
-                 left outer join [machine] as c
+                 left outer join machine as c
                    on b.vessel_no = c.vessel_no
                   and b.machine_name = c.machine_name
-                 left outer join [warehouse] as d
+                 left outer join warehouse as d
                    on b.vessel_no = d.vessel_no
                   and b.warehouse_no = d.warehouse_no
                 where a.vessel_no = @vesselNo
                   and a.use_yn = 'Y') as a
-        where a.standard_qty > isnull(receive_qty, 0) - (isnull(release_qty, 0) + isnull(loss_qty, 0))
+        where a.standard_qty > coalesce(receive_qty, 0) - (coalesce(release_qty, 0) + coalesce(loss_qty, 0))
         order by a.vessel_no
                , a.machine_name
                , a.material_code`,

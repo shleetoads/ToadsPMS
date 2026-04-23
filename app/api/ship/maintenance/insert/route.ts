@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `insert into [maintenance_plan] (
+      `insert into maintenance_plan (
               vessel_no
             , equip_no
             , section_code
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
               @vesselNo
             , @equipNo
             , @sectionCode
-            , (select format(isnull(max(plan_code), 0) + 1, '000') from [maintenance_plan] where vessel_no = @vesselNo and equip_no = @equipNo and section_code = @sectionCode)
+            , (select lpad((coalesce(max(plan_code), 0) + 1)::text, 3, '0') from maintenance_plan where vessel_no = @vesselNo and equip_no = @equipNo and section_code = @sectionCode)
             , @planName
             , @manufacturer
             , @model
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             , @importantItems
             , @instructions
             , @critical
-            , getdate()
+            , now()::timestamp
             , @registUser
       );`,
       [
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         
     const plans: MaintenancePlan[] = await query(
       `select max(plan_code) as plan_code
-         from [maintenance_plan]
+         from maintenance_plan
         where vessel_no = @vesselNo
           and equip_no = @equipNo
           and section_code = @sectionCode
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
               , critical
               , regist_date
               , regist_user
-          from [maintenance_plan]
+          from maintenance_plan
           where vessel_no = @vesselNo
             and equip_no = @equipNo
             and section_code = @sectionCode
@@ -151,8 +151,8 @@ export async function POST(req: Request) {
           if (res.ok) {
             // 정비 정보의 마지막 전송일자 수정
             execute(
-              `update [maintenance_plan]
-                  set last_send_date = getdate()
+              `update maintenance_plan
+                  set last_send_date = now()::timestamp
                 where vessel_no = @vesselNo
                   and equip_no = @equipNo
                   and section_code = @sectionCode
