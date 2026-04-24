@@ -27,10 +27,10 @@ export async function GET(req: Request) {
             , d.interval
             , d.interval_term
             , to_char(d.lastest_date, 'YYYY-MM-DD') as lastest_date
-            , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => d.interval))
-                                                        when 'MONTH' then (d.lastest_date + make_interval(months => d.interval))
-                                                        when 'DAY' then (d.lastest_date + make_interval(days => d.interval))
-                                                        when 'HOURS' then (d.lastest_date + make_interval(days => (d.interval / 24))) end, 'YYYY-MM-DD') as due_date
+            , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => (d.interval)::int))
+                                                        when 'MONTH' then (d.lastest_date + make_interval(months => (d.interval)::int))
+                                                        when 'DAY' then (d.lastest_date + make_interval(days => (d.interval)::int))
+                                                        when 'HOURS' then (d.lastest_date + make_interval(days => ((d.interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
             , to_char(e.work_date, 'YYYY-MM-DD') as work_date
           from vessel as a
          inner join equipment as b

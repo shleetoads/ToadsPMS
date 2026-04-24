@@ -27,10 +27,10 @@ export async function GET(req: Request) {
                                , a1.equip_no
                                , a1.section_code
                                , a1.plan_code
-                               , case a1.interval_term when 'YEAR' then (a1.lastest_date + make_interval(years => a1.interval))
-                                                       when 'MONTH' then (a1.lastest_date + make_interval(months => a1.interval))
-                                                       when 'DAY' then (a1.lastest_date + make_interval(days => a1.interval))
-                                                       when 'HOURS' then (a1.lastest_date + make_interval(days => (a1.interval / 24))) end as due_date
+                               , case a1.interval_term when 'YEAR' then (a1.lastest_date + make_interval(years => (a1.interval)::int))
+                                                       when 'MONTH' then (a1.lastest_date + make_interval(months => (a1.interval)::int))
+                                                       when 'DAY' then (a1.lastest_date + make_interval(days => (a1.interval)::int))
+                                                       when 'HOURS' then (a1.lastest_date + make_interval(days => ((a1.interval / 24))::int)) end as due_date
                             from maintenance_plan as a1
                            where vessel_no = @vesselNo) as b
            on a.vessel_no = b.vessel_no

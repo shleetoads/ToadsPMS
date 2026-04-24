@@ -61,10 +61,10 @@ export async function GET(req: Request) {
                     , d.important_items
                     , d.instructions
                     , d.critical
-                    , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => d.interval))
-                                                                when 'MONTH' then (d.lastest_date + make_interval(months => d.interval))
-                                                                when 'DAY' then (d.lastest_date + make_interval(days => d.interval))
-                                                                when 'HOURS' then (d.lastest_date + make_interval(days => (d.interval / 24))) end, 'YYYY-MM-DD') as due_date
+                    , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => (d.interval)::int))
+                                                                when 'MONTH' then (d.lastest_date + make_interval(months => (d.interval)::int))
+                                                                when 'DAY' then (d.lastest_date + make_interval(days => (d.interval)::int))
+                                                                when 'HOURS' then (d.lastest_date + make_interval(days => ((d.interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
                     , public.fn_get_maintenance_extension(d.vessel_no, d.equip_no, d.section_code, d.plan_code) as extension_date
                  from vessel as a
                  left outer join equipment as b

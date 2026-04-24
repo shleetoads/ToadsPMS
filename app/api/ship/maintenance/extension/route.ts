@@ -30,10 +30,10 @@ export async function GET(req: Request) {
             , public.fn_get_user(a.approver) as approver_name
             , a.approval_reason
             , to_char(b.lastest_date, 'YYYY-MM-DD') as lastest_date
-            , to_char( case b.interval_term when 'YEAR' then (b.lastest_date + make_interval(years => b.interval))
-                                                        when 'MONTH' then (b.lastest_date + make_interval(months => b.interval))
-                                                        when 'DAY' then (b.lastest_date + make_interval(days => b.interval))
-                                                        when 'HOURS' then (b.lastest_date + make_interval(days => (b.interval / 24))) end, 'YYYY-MM-DD') as due_date
+            , to_char( case b.interval_term when 'YEAR' then (b.lastest_date + make_interval(years => (b.interval)::int))
+                                                        when 'MONTH' then (b.lastest_date + make_interval(months => (b.interval)::int))
+                                                        when 'DAY' then (b.lastest_date + make_interval(days => (b.interval)::int))
+                                                        when 'HOURS' then (b.lastest_date + make_interval(days => ((b.interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
          from maintenance_extension as a
         inner join maintenance_plan as b
            on a.vessel_no = b.vessel_no

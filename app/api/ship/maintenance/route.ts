@@ -38,10 +38,10 @@ export async function GET(req: Request) {
             , c.important_items
             , c.instructions
             , c.critical
-            , to_char( case c.interval_term when 'YEAR' then (c.lastest_date + make_interval(years => c.interval))
-                                                        when 'MONTH' then (c.lastest_date + make_interval(months => c.interval))
-                                                        when 'DAY' then (c.lastest_date + make_interval(days => c.interval))
-                                                        when 'HOURS' then (c.lastest_date + make_interval(days => (c.interval / 24))) end, 'YYYY-MM-DD') as due_date
+            , to_char( case c.interval_term when 'YEAR' then (c.lastest_date + make_interval(years => (c.interval)::int))
+                                                        when 'MONTH' then (c.lastest_date + make_interval(months => (c.interval)::int))
+                                                        when 'DAY' then (c.lastest_date + make_interval(days => (c.interval)::int))
+                                                        when 'HOURS' then (c.lastest_date + make_interval(days => ((c.interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
          from equipment as a
          left outer join machine as z
            on a.vessel_no = z.vessel_no

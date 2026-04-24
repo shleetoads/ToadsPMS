@@ -55,14 +55,14 @@ export async function GET(req: Request) {
                                , self_maintenance
                                , manager
                                , critical
-                               , case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
-                                                    when 'MONTH' then (lastest_date + make_interval(months => interval))
-                                                    when 'DAY' then (lastest_date + make_interval(days => interval))
-                                                    when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end as due_date
-                               , case interval_term when 'YEAR' then (now()::timestamp + make_interval(years => interval))
-                                                    when 'MONTH' then (now()::timestamp + make_interval(months => interval))
-                                                    when 'DAY' then (now()::timestamp + make_interval(days => interval))
-                                                    when 'HOURS' then (now()::timestamp + make_interval(days => (interval / 24))) end as next_due_date
+                               , case interval_term when 'YEAR' then (lastest_date + make_interval(years => (interval)::int))
+                                                    when 'MONTH' then (lastest_date + make_interval(months => (interval)::int))
+                                                    when 'DAY' then (lastest_date + make_interval(days => (interval)::int))
+                                                    when 'HOURS' then (lastest_date + make_interval(days => ((interval / 24))::int)) end as due_date
+                               , case interval_term when 'YEAR' then (now()::timestamp + make_interval(years => (interval)::int))
+                                                    when 'MONTH' then (now()::timestamp + make_interval(months => (interval)::int))
+                                                    when 'DAY' then (now()::timestamp + make_interval(days => (interval)::int))
+                                                    when 'HOURS' then (now()::timestamp + make_interval(days => ((interval / 24))::int)) end as next_due_date
                                , public.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code) as extension_date
                             from maintenance_plan
                            where vessel_no = @vesselNo) as b

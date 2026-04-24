@@ -24,15 +24,15 @@ export async function GET(req: Request) {
                                , plan_name
                                , lastest_date
                                , case when public.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code) >
-                                           case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
-                                                              when 'MONTH' then (lastest_date + make_interval(months => interval))
-                                                              when 'DAY' then (lastest_date + make_interval(days => interval))
-                                                              when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end
+                                           case interval_term when 'YEAR' then (lastest_date + make_interval(years => (interval)::int))
+                                                              when 'MONTH' then (lastest_date + make_interval(months => (interval)::int))
+                                                              when 'DAY' then (lastest_date + make_interval(days => (interval)::int))
+                                                              when 'HOURS' then (lastest_date + make_interval(days => ((interval / 24))::int)) end
                                       then public.fn_get_maintenance_extension(vessel_no, equip_no, section_code, plan_code)
-                                      else case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
-                                                              when 'MONTH' then (lastest_date + make_interval(months => interval))
-                                                              when 'DAY' then (lastest_date + make_interval(days => interval))
-                                                              when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end
+                                      else case interval_term when 'YEAR' then (lastest_date + make_interval(years => (interval)::int))
+                                                              when 'MONTH' then (lastest_date + make_interval(months => (interval)::int))
+                                                              when 'DAY' then (lastest_date + make_interval(days => (interval)::int))
+                                                              when 'HOURS' then (lastest_date + make_interval(days => ((interval / 24))::int)) end
                                       end as due_date
                             from maintenance_plan) as b
            on a.vessel_no = b.vessel_no

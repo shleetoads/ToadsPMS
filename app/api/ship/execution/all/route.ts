@@ -116,34 +116,34 @@ PlanCalc AS (
 
         , CASE
               WHEN pb.interval_term = 'YEAR'
-              THEN (pb.lastest_date + make_interval(years => pb.interval))
+              THEN (pb.lastest_date + make_interval(years => (pb.interval)::int))
 
               WHEN pb.interval_term = 'MONTH'
-              THEN (pb.lastest_date + make_interval(months => pb.interval))
+              THEN (pb.lastest_date + make_interval(months => (pb.interval)::int))
 
               WHEN pb.interval_term = 'DAY'
-              THEN (pb.lastest_date + make_interval(days => pb.interval))
+              THEN (pb.lastest_date + make_interval(days => (pb.interval)::int))
 
               WHEN pb.interval_term = 'HOURS'
                    AND pb.diff_per_day > 0
-              THEN (pb.lastest_date + make_interval(days => (CAST((coalesce(pb.interval, 0) * 60) AS decimal(18,2)) / pb.diff_per_day)))
+              THEN (pb.lastest_date + make_interval(days => ((CAST((coalesce(pb.interval, 0) * 60) AS decimal(18,2)) / pb.diff_per_day))::int))
 
               ELSE pb.lastest_date
           END AS due_date
 
         , CASE
               WHEN pb.interval_term = 'YEAR'
-              THEN (now()::timestamp + make_interval(years => pb.interval))
+              THEN (now()::timestamp + make_interval(years => (pb.interval)::int))
 
               WHEN pb.interval_term = 'MONTH'
-              THEN (now()::timestamp + make_interval(months => pb.interval))
+              THEN (now()::timestamp + make_interval(months => (pb.interval)::int))
 
               WHEN pb.interval_term = 'DAY'
-              THEN (now()::timestamp + make_interval(days => pb.interval))
+              THEN (now()::timestamp + make_interval(days => (pb.interval)::int))
 
               WHEN pb.interval_term = 'HOURS'
                    AND pb.diff_per_day > 0
-              THEN (now()::timestamp + make_interval(days => (CAST((coalesce(pb.interval, 0) * 60) AS decimal(18,2)) / pb.diff_per_day)))
+              THEN (now()::timestamp + make_interval(days => ((CAST((coalesce(pb.interval, 0) * 60) AS decimal(18,2)) / pb.diff_per_day))::int))
 
               ELSE now()::timestamp
           END AS next_due_date
@@ -206,7 +206,7 @@ SELECT
           THEN 'DELAYED'
 
           WHEN lastest_date_only IS NOT NULL
-           AND lastest_date_only >= (today_date + make_interval(months => -1))
+           AND lastest_date_only >= (today_date + make_interval(months => (-1)::int))
            AND lastest_date_only <= today_date
           THEN 'COMPLETE'
 

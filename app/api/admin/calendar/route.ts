@@ -25,7 +25,7 @@ export async function GET(req: Request) {
             , to_char(a.lastest_date, 'YYYY-MM-DD') as lastest_date
             , to_char(a.due_date, 'YYYY-MM-DD') as due_date
             , to_char(a.extension_date, 'YYYY-MM-DD') as extension_date
-            , to_char(case when a.due_date < now()::timestamp and a.extension_date is null then (now()::timestamp + make_interval(days => -1))
+            , to_char(case when a.due_date < now()::timestamp and a.extension_date is null then (now()::timestamp + make_interval(days => (-1)::int))
                                         when a.due_date < now()::timestamp and a.extension_date is not null and a.extension_date > now()::timestamp then a.extension_date
                                         else a.due_date end, 'YYYY-MM-DD') as calendar_date
             , case when a.due_date < now()::timestamp and a.lastest_date < now()::timestamp and a.extension_date >= now()::timestamp then 'EXTENSION'
@@ -46,10 +46,10 @@ export async function GET(req: Request) {
                     , a.manager
                     , a.critical
                     , a.lastest_date
-                    , case a.interval_term when 'YEAR' then (a.lastest_date + make_interval(years => a.interval))
-                                           when 'MONTH' then (a.lastest_date + make_interval(months => a.interval))
-                                           when 'DAY' then (a.lastest_date + make_interval(days => a.interval))
-                                           when 'HOURS' then (a.lastest_date + make_interval(days => (a.interval / 24))) end as due_date
+                    , case a.interval_term when 'YEAR' then (a.lastest_date + make_interval(years => (a.interval)::int))
+                                           when 'MONTH' then (a.lastest_date + make_interval(months => (a.interval)::int))
+                                           when 'DAY' then (a.lastest_date + make_interval(days => (a.interval)::int))
+                                           when 'HOURS' then (a.lastest_date + make_interval(days => ((a.interval / 24))::int)) end as due_date
                     , public.fn_get_maintenance_extension(a.vessel_no, a.equip_no, a.section_code, a.plan_code) as extension_date
                  from maintenance_plan as a
                 inner join section as b
@@ -61,9 +61,9 @@ export async function GET(req: Request) {
                   and b.equip_no = c.equip_no
                 inner join vessel as d
                    on c.vessel_no = d.vessel_no) as a
-        where (a.due_date < now()::timestamp or (a.due_date >= now()::timestamp and a.due_date <= (now()::timestamp + make_interval(days => 90))))
-          and (a.extension_date is null or (a.extension_date >= now()::timestamp and a.extension_date <= (now()::timestamp + make_interval(days => 90))))
-        order by a.vessel_no, to_char(case when a.due_date < now()::timestamp then (now()::timestamp + make_interval(days => -1)) else a.due_date end, 'YYYY-MM-DD'), a.equip_no, a.section_code, a.plan_name`
+        where (a.due_date < now()::timestamp or (a.due_date >= now()::timestamp and a.due_date <= (now()::timestamp + make_interval(days => (90)::int))))
+          and (a.extension_date is null or (a.extension_date >= now()::timestamp and a.extension_date <= (now()::timestamp + make_interval(days => (90)::int))))
+        order by a.vessel_no, to_char(case when a.due_date < now()::timestamp then (now()::timestamp + make_interval(days => (-1)::int)) else a.due_date end, 'YYYY-MM-DD'), a.equip_no, a.section_code, a.plan_name`
     );
 
     let vessels: Vessel[] = [];

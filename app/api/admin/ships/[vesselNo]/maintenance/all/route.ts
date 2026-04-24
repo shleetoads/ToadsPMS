@@ -28,10 +28,10 @@ export async function GET(req: Request) {
             , important_items
             , instructions
             , critical
-            , to_char( case interval_term when 'YEAR' then (lastest_date + make_interval(years => interval))
-                                                      when 'MONTH' then (lastest_date + make_interval(months => interval))
-                                                      when 'DAY' then (lastest_date + make_interval(days => interval))
-                                                      when 'HOURS' then (lastest_date + make_interval(days => (interval / 24))) end, 'YYYY-MM-DD') as due_date
+            , to_char( case interval_term when 'YEAR' then (lastest_date + make_interval(years => (interval)::int))
+                                                      when 'MONTH' then (lastest_date + make_interval(months => (interval)::int))
+                                                      when 'DAY' then (lastest_date + make_interval(days => (interval)::int))
+                                                      when 'HOURS' then (lastest_date + make_interval(days => ((interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
          from maintenance_plan
         where vessel_no = @vesselNo`,
       [
