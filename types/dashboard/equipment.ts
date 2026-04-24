@@ -5,6 +5,6 @@ export interface Equipment {
     equip_no: string;
     equip_name: string;
     category: string;
-    machine_name: string;
+    // machine_name: string;
     children: Maintenance[];
 }

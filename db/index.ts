@@ -1,49 +1,129 @@
 import 'dotenv/config';
-import sql, { config as SqlConfig, ConnectionPool } from 'mssql';
+import { Pool, PoolClient } from 'pg';
 
-let pool: ConnectionPool | null = null;
+let pool: Pool | null = null;
 
-const config: SqlConfig = {
-  user: process.env.DB_USER!,
-  password: process.env.DB_PASS!,
-  server: process.env.DB_HOST!,
-  port: Number(process.env.DB_PORT) || 1433,
-  database: process.env.DB_NAME!,
-  options: {
-    encrypt: false,             // 로컬 테스트용
-    trustServerCertificate: true,
-  },
-};
-
-export async function getSql() {
-  return sql;
-}
-
-export async function getPool(): Promise<ConnectionPool> {
+export async function getPool(): Promise<Pool> {
   if (!pool) {
-    pool = await new sql.ConnectionPool(config).connect();
+    pool = new Pool({
+      user: process.env.DB_USER!,
+      password: process.env.DB_PASS!,
+      host: process.env.DB_HOST!,
+      port: Number(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME!,
+      // RDS는 SSL 강제. 운영 승격 시 RDS CA 번들 검증으로 교체 예정.
+      ssl: { rejectUnauthorized: false },
+    });
   }
   return pool;
 }
 
-export async function query<T = any>(queryString: string, params?: { name: string, value: any }[]) {
-  const pool = await getPool();
-  const request = pool.request();
+/** 이름 기반 파라미터 타입 */
+export type NamedParam = { name: string; value: any };
 
-  // 파라미터 바인딩
-  params?.forEach(p => request.input(p.name, p.value));
-
-  const result = await request.query<T>(queryString);
-  return result.recordset;
+/**
+ * MSSQL의 @name 방식 파라미터를 PostgreSQL의 $N 방식으로 변환.
+ * SQL에서 @paramName이 등장하는 순서대로 $1, $2, ... 로 치환.
+ * 동일 이름 재등장 시 동일 $N 을 재사용한다.
+ *
+ * 반환은 { text, values } — pg 드라이버 `client.query(text, values)` 호출부에 그대로 전달 가능.
+ */
+export function adaptNamedParams(
+  sql: string,
+  params: NamedParam[]
+): { text: string; values: any[] } {
+  const seen: string[] = [];
+  const text = sql.replace(/@(\w+)/g, (_, name) => {
+    if (!seen.includes(name)) seen.push(name);
+    return `$${seen.indexOf(name) + 1}`;
+  });
+  const values = seen.map(name => params.find(p => p.name === name)?.value);
+  return { text, values };
 }
 
-export async function execute<T = any>(queryString: string, params?: { name: string, value: any }[]) {
-  const pool = await getPool();
-  const request = pool.request();
+/** 일반 SELECT / 단일 쿼리 */
+export async function query<T = any>(
+  queryString: string,
+  params?: NamedParam[]
+): Promise<T[]> {
+  const p = await getPool();
+  if (params && params.length > 0) {
+    const { text, values } = adaptNamedParams(queryString, params);
+    const result = await p.query<T>(text, values);
+    return result.rows;
+  }
+  const result = await p.query<T>(queryString);
+  return result.rows;
+}
 
-  // 파라미터 바인딩
-  params?.forEach(p => request.input(p.name, p.value));
+/** 일반 INSERT / UPDATE / DELETE */
+export async function execute(
+  queryString: string,
+  params?: NamedParam[]
+): Promise<number> {
+  const p = await getPool();
+  if (params && params.length > 0) {
+    const { text, values } = adaptNamedParams(queryString, params);
+    const result = await p.query(text, values);
+    return result.rowCount ?? 0;
+  }
+  const result = await p.query(queryString);
+  return result.rowCount ?? 0;
+}
 
-  const result = await request.query<T>(queryString);
-  return result.rowsAffected[0];
+/** 트랜잭션 내 SELECT */
+export async function queryWithClient<T = any>(
+  client: PoolClient,
+  queryString: string,
+  params?: NamedParam[]
+): Promise<T[]> {
+  if (params && params.length > 0) {
+    const { text, values } = adaptNamedParams(queryString, params);
+    const result = await client.query<T>(text, values);
+    return result.rows;
+  }
+  const result = await client.query<T>(queryString);
+  return result.rows;
+}
+
+/** 트랜잭션 내 INSERT / UPDATE / DELETE */
+export async function executeWithClient(
+  client: PoolClient,
+  queryString: string,
+  params?: NamedParam[]
+): Promise<number> {
+  if (params && params.length > 0) {
+    const { text, values } = adaptNamedParams(queryString, params);
+    const result = await client.query(text, values);
+    return result.rowCount ?? 0;
+  }
+  const result = await client.query(queryString);
+  return result.rowCount ?? 0;
+}
+
+/**
+ * 트랜잭션 래퍼
+ * 사용 예:
+ *   const count = await withTransaction(async (client) => {
+ *     const { text, values } = adaptNamedParams(sql, params);
+ *     const r = await client.query(text, values);
+ *     return r.rowCount ?? 0;
+ *   });
+ */
+export async function withTransaction<T>(
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const p = await getPool();
+  const client = await p.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

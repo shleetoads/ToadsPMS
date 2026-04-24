@@ -38,7 +38,7 @@ SELECT
        er.prev_upload_date,
        er.prev_runtime
   FROM HourEquipment he
-  LEFT JOIN equipment_operation_time er
+  LEFT JOIN equipment_runtime er
     ON er.vessel_no    = he.vessel_no
    AND er.machine_name = he.machine_name
    AND er.equip_no     = he.equip_no
