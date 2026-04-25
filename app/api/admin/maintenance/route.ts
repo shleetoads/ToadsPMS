@@ -18,7 +18,7 @@ export async function GET(req: Request) {
             , a.manufacturer
             , a.model
             , a.specifications
-            , a.lastest_date
+            , to_char(a.lastest_date, 'YYYY-MM-DD') as lastest_date
             , a.workers
             , a.work_hours
             , a.interval
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
                     , d.manufacturer
                     , d.model
                     , d.specifications
-                    , to_char(d.lastest_date, 'YYYY-MM-DD') as lastest_date
+                    , d.lastest_date
                     , d.workers
                     , d.work_hours
                     , d.interval
@@ -61,10 +61,10 @@ export async function GET(req: Request) {
                     , d.important_items
                     , d.instructions
                     , d.critical
-                    , to_char( case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => (d.interval)::int))
+                    , case d.interval_term when 'YEAR' then (d.lastest_date + make_interval(years => (d.interval)::int))
                                                                 when 'MONTH' then (d.lastest_date + make_interval(months => (d.interval)::int))
                                                                 when 'DAY' then (d.lastest_date + make_interval(days => (d.interval)::int))
-                                                                when 'HOURS' then (d.lastest_date + make_interval(days => ((d.interval / 24))::int)) end, 'YYYY-MM-DD') as due_date
+                                                                when 'HOURS' then (d.lastest_date + make_interval(days => ((d.interval / 24))::int)) end as due_date
                     , public.fn_get_maintenance_extension(d.vessel_no, d.equip_no, d.section_code, d.plan_code) as extension_date
                  from vessel as a
                  left outer join equipment as b
