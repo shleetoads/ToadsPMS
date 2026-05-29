@@ -15,7 +15,7 @@ export async function GET(req: Request) {
             , a.standard_qty
             , a.receive_qty - (a.release_qty + a.loss_qty) as stock_qty
             , a.standard_qty - (a.receive_qty - (a.release_qty + a.loss_qty)) as shortage_qty
-            , coalesce(a.last_used, '') as last_used
+            , coalesce(to_char(a.last_used, 'YYYY-MM-DD'), '') as last_used
          from (select a.vessel_no
                     , a.vessel_name
                     , b.machine_name
