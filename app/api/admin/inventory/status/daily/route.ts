@@ -30,17 +30,17 @@ export async function GET(req: Request) {
                          from receive
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and receive_date = to_char(now()::timestamp, 'YYYY-MM-DD')) as receive_qty
+                          and receive_date = current_date) as receive_qty
                     , (select sum(coalesce(release_qty, 0))
                          from "release"
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and release_date = to_char(now()::timestamp, 'YYYY-MM-DD')) as release_qty
+                          and release_date = current_date) as release_qty
                     , (select sum(coalesce(loss_qty, 0))
                          from loss
                         where vessel_no = b.vessel_no
                           and material_code = b.material_code
-                          and loss_date = to_char(now()::timestamp, 'YYYY-MM-DD')) as loss_qty
+                          and loss_date = current_date) as loss_qty
                     , (select sum(coalesce(receive_qty, 0))
                          from receive
                         where vessel_no = b.vessel_no

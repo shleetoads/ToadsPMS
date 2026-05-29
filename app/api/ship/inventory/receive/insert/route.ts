@@ -89,7 +89,7 @@ export async function POST(req: Request) {
          from receive
         where vessel_no = @vesselNo
           and regist_user = @registUser
-          and regist_date >= to_char(now()::timestamp, 'YYYY-MM-DD');`,
+          and regist_date >= current_date;`,
       [
         { name: 'vesselNo', value: receiveData.vessel_no },
         { name: 'registUser', value: receiveData.regist_user },
