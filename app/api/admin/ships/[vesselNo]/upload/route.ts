@@ -33,7 +33,7 @@ export async function POST(req: Request) {
           sectionName = '';
 
           let queryString =
-            `merge machine as a
+            `merge into machine as a
              using (select @vesselNo as vessel_no
                          , @machine as machine_name
                          , @manufacturer as manufacturer
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
           sectionName = '';
 
           let queryString =
-            `merge equipment as a
+            `merge into equipment as a
              using (select @vesselNo as vessel_no
                          , @equipName as equip_name
                          , @category as category
@@ -163,7 +163,7 @@ export async function POST(req: Request) {
 
         if (rows.Section && sectionName !== rows.Section) {
           let queryString =
-            `merge section as a
+            `merge into section as a
              using (select @vesselNo as vessel_no
                          , @equipNo as equip_no
                          , @sectionName as section_name
@@ -227,7 +227,7 @@ export async function POST(req: Request) {
 
         if (rows.MaintenanceName) {
           let queryString =
-              `merge maintenance_plan as a
+              `merge into maintenance_plan as a
               using (select @vesselNo as vessel_no
                           , @equipNo as equip_no
                           , @sectionCode as section_code
