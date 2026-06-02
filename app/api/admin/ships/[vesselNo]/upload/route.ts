@@ -37,8 +37,8 @@ export async function POST(req: Request) {
              using (select @vesselNo as vessel_no
                          , @machine as machine_name
                          , @manufacturer as manufacturer
-                         , @registUser as regist_user
-                         , @modifyUser as modify_user) as b
+                         , @registUser::integer as regist_user
+                         , @modifyUser::integer as modify_user) as b
                 on (a.vessel_no = b.vessel_no
                and  a.machine_name = b.machine_name)
               when matched then
@@ -90,8 +90,8 @@ export async function POST(req: Request) {
                          , @manufacturer as manufacturer
                          , @model as model
                          , @machine as machine_name
-                         , @registUser as regist_user
-                         , @modifyUser as modify_user) as b
+                         , @registUser::integer as regist_user
+                         , @modifyUser::integer as modify_user) as b
                 on (a.vessel_no = b.vessel_no
                and  a.equip_name = b.equip_name
                and a.machine_name = b.machine_name )
@@ -167,8 +167,8 @@ export async function POST(req: Request) {
              using (select @vesselNo as vessel_no
                          , @equipNo as equip_no
                          , @sectionName as section_name
-                         , @registUser as regist_user
-                         , @modifyUser as modify_user) as b
+                         , @registUser::integer as regist_user
+                         , @modifyUser::integer as modify_user) as b
                 on (a.vessel_no = b.vessel_no
                and  a.equip_no = b.equip_no
                and  a.section_name = b.section_name)
@@ -235,21 +235,21 @@ export async function POST(req: Request) {
                           , @manufacturer as manufacturer
                           , @model as model
                           , @specifications as specifications
-                          , @workers as workers
-                          , @workHours as work_hours
+                          , @workers::integer as workers
+                          , @workHours::integer as work_hours
                           , @intervalTerm as interval_term
-                          , @interval as interval
+                          , @interval::integer as interval
                           , case @location when 'DOCK' then 'D'
                                             when 'IN PORT' then 'P'
                                             when 'SAILING' then 'S' else '' end as location
                           , @manager as manager
                           , @selfMaintenance as self_maintenance
                           , @critical as critical
-                          , @lastestDate as lastest_date
+                          , @lastestDate::date as lastest_date
                           , @instructions as instructions
                           , @prevPmsCode as prev_pms_code
-                          , @registUser as regist_user
-                          , @modifyUser as modify_user) as b
+                          , @registUser::integer as regist_user
+                          , @modifyUser::integer as modify_user) as b
                   on (a.vessel_no = b.vessel_no
                 and  a.equip_no = b.equip_no
                 and  a.section_code = b.section_code
