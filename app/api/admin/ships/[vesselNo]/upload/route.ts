@@ -117,7 +117,7 @@ export async function POST(req: Request) {
                    )
                    values (
                            b.vessel_no
-                         , (select lpad((coalesce(max(equip_no), 0) + 1)::text, 3, '0') from equipment where vessel_no = b.vessel_no)
+                         , (select lpad((coalesce(max(equip_no::int), 0) + 1)::text, 3, '0') from equipment where vessel_no = b.vessel_no)
                          , b.equip_name
                          , lower(b.category)
                          , b.manufacturer
@@ -188,7 +188,7 @@ export async function POST(req: Request) {
                    values (
                            b.vessel_no
                          , b.equip_no
-                         , (select lpad((coalesce(max(section_code), 0) + 1)::text, 3, '0') from section where vessel_no = b.vessel_no and equip_no = b.equip_no)
+                         , (select lpad((coalesce(max(section_code::int), 0) + 1)::text, 3, '0') from section where vessel_no = b.vessel_no and equip_no = b.equip_no)
                          , b.section_name
                          , now()::timestamp
                          , b.regist_user
@@ -300,7 +300,7 @@ export async function POST(req: Request) {
                             b.vessel_no
                           , b.equip_no
                           , b.section_code
-                          , (select lpad((coalesce(max(plan_code), 0) + 1)::text, 3, '0') from maintenance_plan where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
+                          , (select lpad((coalesce(max(plan_code::int), 0) + 1)::text, 3, '0') from maintenance_plan where vessel_no = b.vessel_no and equip_no = b.equip_no and section_code = b.section_code)
                           , b.plan_name
                           , b.manufacturer
                           , b.model
