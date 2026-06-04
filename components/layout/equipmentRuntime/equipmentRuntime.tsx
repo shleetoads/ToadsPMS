@@ -13,9 +13,12 @@ import EquipmentRuntimeInput from "./equipmentRuntimeInput"
 
 interface Props {
   vesselNo: string
+  editable?: boolean
 }
 
-export default function EquipmentRuntime({ vesselNo }: Props) {
+export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
+  console.log(vesselNo)
+
   const [machineRuntimes, setMachineRuntimes] = useState<MachineRuntimeData[]>([])
   const [isOpenDialog, setIsOpenDialog] = useState(false)
   const [selectedMachineData, setSelectedMachineData] = useState<MachineRuntimeData>()
@@ -26,7 +29,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
       .then(data => setMachineRuntimes(data))
       .catch(err => console.error(err))
   }
-
+  
   useEffect(() => {
     fetchEquipmentRuntimes(vesselNo)
   }, [vesselNo])
@@ -79,6 +82,7 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
   }
     
   const handleOnMachineClick = ( machineData: MachineRuntimeData ) => {
+    if (!editable) return
     setSelectedMachineData(machineData)
     setIsOpenDialog(true)
   }
@@ -169,6 +173,77 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
     )  
   }
 
+  const MainEngineDialogTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
+    const [runtime, setRuntime] = useState(0)
+
+    const cylinders = machineData.equipment_runtime_datas
+    const currentMax = getMaxRuntime(cylinders)
+    const latestCylinder = cylinders.reduce(
+      (max, cur) => (cur.lastest_runtime > max.lastest_runtime ? cur : max),
+      cylinders[0]
+    )
+
+    // MAIN ENGINE은 모든 실린더가 함께 운전되어 운전시간이 동일하므로,
+    // 실린더 선택 없이 하나의 값을 모든 실린더에 일괄 기입한다.
+    const handleInsert = async (runtime: number) => {
+      if (currentMax > runtime) {
+        alert("입력한 운전시간은 기존 운전시간보다 작을 수 없습니다.")
+        return
+      }
+
+      for (const cylinder of cylinders) {
+        const res = await fetch('/api/ship/equipmentRuntime/insert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vesselNo: cylinder.vessel_no,
+            equipNo: cylinder.equip_no,
+            equipName: cylinder.equip_name,
+            machineName: cylinder.machine_name,
+            runtime: runtime,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (!data.success) {
+          alert(data.message)
+          return
+        }
+      }
+
+      alert("저장이 완료되었습니다.")
+      setIsOpenDialog(false)
+      fetchEquipmentRuntimes(vesselNo)
+    }
+
+    return (
+      <div key={"dialog_" + machineData.machine_name}>
+        <div className="mb-4">
+          <span className="text-sx"> {machineData.machine_name} </span>
+        </div>
+
+        <Card>
+          <CardContent>
+            <Odometer value={currentMax} />
+            <span className="text-gray-500 text-sm">
+              Last Update : {formatDateKST(latestCylinder?.lastest_upload_date)}
+            </span>
+          </CardContent>
+          <CardContent className="flex flex-col gap-2">
+            <EquipmentRuntimeInput
+              equip_name={machineData.machine_name}
+              machine_name={machineData.machine_name}
+              handleRuntimeChanged={setRuntime}
+            />
+
+            <Button className="self-end" onClick={() => handleInsert(runtime)}> 수정 </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   const MainEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
     return (
       <Card onClick={() => handleOnMachineClick(machineData)}>
@@ -219,7 +294,11 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
         <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
           <DialogContent>
           <DialogTitle>장비 운전 시간 관리</DialogTitle>
-          <DialogEquipmentDataTag machineData={selectedMachineData}></DialogEquipmentDataTag>
+          {selectedMachineData.machine_name === "MAIN ENGINE" ? (
+            <MainEngineDialogTag machineData={selectedMachineData} />
+          ) : (
+            <DialogEquipmentDataTag machineData={selectedMachineData} />
+          )}
           </DialogContent>
         </Dialog>
       )
@@ -245,7 +324,6 @@ export default function EquipmentRuntime({ vesselNo }: Props) {
   return (
     <div className="mb-6">
       <MachineTag machineDatas={machineRuntimes} />
-
       {isOpenDialog && (
         <MachineDialog></MachineDialog>
       )}

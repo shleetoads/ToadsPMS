@@ -9,16 +9,17 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Ship, AlertTriangle, Calendar, CheckCircle, Clock, Users, Wrench } from "lucide-react"
 import { Vessel } from '@/types/dashboard/vessel'; // ✅ interface import
+import EquipmentRuntime from "@/components/layout/equipmentRuntime/equipmentRuntime"
 
 export default function AdminDashboard() {
   const [userInfo, setUserInfo] = useState<any>(null)
   const [vesselItems, setVesselItems] = useState<Vessel[]>([]);
 
   const totalShips = vesselItems.length
-  const totalDelayedTasks = vesselItems.reduce((sum, ship) => sum + ship.delayed_tasks, 0)
-  const totalWeeklyTasks = vesselItems.reduce((sum, ship) => sum + ship.weekly_tasks, 0)
-  const totalMonthlyTasks = vesselItems.reduce((sum, ship) => sum + ship.monthly_tasks, 0)
-  const totalCompletedTasks = vesselItems.reduce((sum, ship) => sum + ship.completed_tasks, 0)
+  const totalDelayedTasks = vesselItems.reduce((sum, ship) => sum + Number(ship.delayed_tasks), 0)
+  const totalWeeklyTasks = vesselItems.reduce((sum, ship) => sum + Number(ship.weekly_tasks), 0)
+  const totalMonthlyTasks = vesselItems.reduce((sum, ship) => sum + Number(ship.monthly_tasks), 0)
+  const totalCompletedTasks = vesselItems.reduce((sum, ship) => sum + Number(ship.completed_tasks), 0)
 
   const fetchVesselTask = () => {
       fetch('/api/admin/dashboard')
@@ -185,6 +186,11 @@ export default function AdminDashboard() {
                         </div>
                         <span className="text-xs text-gray-600">금월 완료</span>
                       </Button>
+                    </div>
+
+                    {/* ME / G/E 운전 시간 (조회 전용) */}
+                    <div className="mt-4">
+                      <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} />
                     </div>
 
                     {/* Progress bar for monthly completion rate */}
