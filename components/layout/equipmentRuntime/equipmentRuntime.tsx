@@ -14,9 +14,10 @@ import EquipmentRuntimeInput from "./equipmentRuntimeInput"
 interface Props {
   vesselNo: string
   editable?: boolean
+  compact?: boolean
 }
 
-export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
+export default function EquipmentRuntime({ vesselNo, editable = true, compact = false }: Props) {
   console.log(vesselNo)
 
   const [machineRuntimes, setMachineRuntimes] = useState<MachineRuntimeData[]>([])
@@ -53,7 +54,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
     
   type OdometerProps = {
     value?: number
-    size?: "xl" | "2xl"
+    size?: "sm" | "lg" | "xl" | "2xl"
   }
 
   const Odometer = ({ value = 0, size = "2xl" }: OdometerProps) => {
@@ -65,18 +66,21 @@ export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
     const minStr = minutes.toString().padStart(2, "0")
 
     const sizeMap = {
+      sm: "text-sm",
+      lg: "text-lg",
       xl: "text-xl",
       "2xl": "text-2xl",
     }
 
     const textStyle = `${sizeMap[size]} font-bold`
+    const unitStyle = size === "sm" || size === "lg" ? "text-xs text-gray-500" : "text-sm text-gray-500"
 
     return (
       <div className="flex items-end gap-1">
         <span className={textStyle}>{hourStr}</span>
-        <span className="text-sm text-gray-500">H</span>
+        <span className={unitStyle}>H</span>
         <span className={textStyle}>{minStr}</span>
-        <span className="text-sm text-gray-500">M</span>
+        <span className={unitStyle}>M</span>
       </div>
     )
   }
@@ -246,15 +250,18 @@ export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
 
   const MainEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
     return (
-      <Card onClick={() => handleOnMachineClick(machineData)}>
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold">
+      <Card
+        onClick={() => handleOnMachineClick(machineData)}
+        className={compact ? "gap-1 py-3" : undefined}
+      >
+        <CardHeader className={compact ? "px-3" : undefined}>
+          <CardTitle className={compact ? "text-xs font-medium text-gray-600" : "text-2xl font-semibold"}>
             {machineData.machine_name}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="flex justify-center">
-          <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} />
+        <CardContent className={compact ? "flex justify-center px-3" : "flex justify-center"}>
+          <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} size={compact ? "lg" : "2xl"} />
         </CardContent>
       </Card>
     )
@@ -262,22 +269,25 @@ export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
 
   const GeneratorEngineTag = ({ machineData }: { machineData: MachineRuntimeData }) => {
     return (
-      <Card onClick={() => handleOnMachineClick(machineData)}>
-        <CardContent>
-          <CardTitle className="text-2xl font-semibold"> G/E </CardTitle>
-          <div className="space-y-2">
+      <Card
+        onClick={() => handleOnMachineClick(machineData)}
+        className={compact ? "gap-1 py-3" : undefined}
+      >
+        <CardContent className={compact ? "px-3" : undefined}>
+          <CardTitle className={compact ? "text-xs font-medium text-gray-600 mb-1" : "text-2xl font-semibold"}> G/E </CardTitle>
+          <div className={compact ? "space-y-0.5" : "space-y-2"}>
             {machineData.equipment_runtime_datas.map((equipData) =>
               equipData.equip_name !== "EM'CY GENERATOR ENGINE" ? (
                 <div
                   key={equipData.equip_no}
                   className="grid grid-cols-2 gap-2"
                 >
-                  <span className="text-xl justify-self-start">
+                  <span className={compact ? "text-xs justify-self-start" : "text-xl justify-self-start"}>
                     {getSimpleName(equipData.equip_name)}
                   </span>
 
                   <div className="justify-self-end">
-                    <Odometer value={equipData.lastest_runtime} size="xl" />
+                    <Odometer value={equipData.lastest_runtime} size={compact ? "sm" : "xl"} />
                   </div>
                 </div>
               ) : null
@@ -308,7 +318,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true }: Props) {
   const MachineTag = ({ machineDatas }: { machineDatas: MachineRuntimeData[] }) => {
     machineDatas.sort((a, b) =>b.machine_name.localeCompare(a.machine_name))
     return(
-      <div className="grid grid-cols-2 gap-6">
+      <div className={compact ? "grid grid-cols-2 md:grid-cols-4 gap-4" : "grid grid-cols-2 gap-6"}>
         {machineDatas.map((machineData) =>
           machineData.machine_name === "MAIN ENGINE" ? (
             <MainEngineTag key={machineData.machine_name} machineData={machineData} />

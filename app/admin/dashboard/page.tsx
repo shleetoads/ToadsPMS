@@ -190,7 +190,7 @@ export default function AdminDashboard() {
 
                     {/* ME / G/E 운전 시간 (조회 전용) */}
                     <div className="mt-4">
-                      <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} />
+                      <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} compact />
                     </div>
 
                     {/* Progress bar for monthly completion rate */}
