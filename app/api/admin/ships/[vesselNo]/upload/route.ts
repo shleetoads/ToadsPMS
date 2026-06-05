@@ -17,6 +17,8 @@ export async function POST(req: Request) {
       let equipName: string = '';
       let sectionCode: string = '';
       let sectionName: string = '';
+      // 한 업로드 내에서 장비별 운전시간 upsert를 1회만 수행 (prev/lastest 뒤바뀜 방지)
+      const runtimeUpserted = new Set<string>();
 
       for (const rows of excelData) {
         if (vesselNo !== rows.CallSign.trim() ||
@@ -246,6 +248,7 @@ export async function POST(req: Request) {
                           , @selfMaintenance as self_maintenance
                           , @critical as critical
                           , @lastestDate::date as lastest_date
+                          , @lastestRunHour::integer as lastest_run_hour
                           , @instructions as instructions
                           , @prevPmsCode as prev_pms_code
                           , @registUser::integer as regist_user
@@ -268,6 +271,7 @@ export async function POST(req: Request) {
                           , self_maintenance = b.self_maintenance
                           , critical = b.critical
                           , lastest_date = b.lastest_date
+                          , lastest_run_hour = b.lastest_run_hour
                           , instructions = b.instructions
                           , prev_pms_code = b.prev_pms_code
                           , modify_date = now()::timestamp
@@ -291,6 +295,7 @@ export async function POST(req: Request) {
                           , self_maintenance
                           , critical
                           , lastest_date
+                          , lastest_run_hour
                           , instructions
                           , prev_pms_code
                           , regist_date
@@ -314,6 +319,7 @@ export async function POST(req: Request) {
                           , b.self_maintenance
                           , b.critical
                           , b.lastest_date
+                          , b.lastest_run_hour
                           , b.instructions
                           , b.prev_pms_code
                           , now()::timestamp
@@ -324,6 +330,9 @@ export async function POST(req: Request) {
           if (typeof lastestDate === 'number') {
             lastestDate = ConvertExcelSerialToData(lastestDate);
           }
+
+          // LastestOperationTime(hh:mm) -> 분(min) 단위 정수로 변환하여 저장
+          const lastestRunHour = ConvertTimeToMinutes(rows.LastestOperationTime);
 
           let params: NamedParam[] = [
             { name: 'vesselNo', value: vesselNo },
@@ -342,6 +351,7 @@ export async function POST(req: Request) {
             { name: 'selfMaintenance', value: rows.SelfMaintenance? rows.SelfMaintenance : '' },
             { name: 'critical', value: rows.Critical? rows.Critical : '' },
             { name: 'lastestDate', value: lastestDate },
+            { name: 'lastestRunHour', value: lastestRunHour },
             { name: 'instructions', value: rows.Instructions? rows.Instructions : '' },
             { name: 'prevPmsCode', value: rows.PrevPMSCode? rows.PrevPMSCode : '' },
             { name: 'registUser', value: registUser },
@@ -352,6 +362,36 @@ export async function POST(req: Request) {
           let result = await client.query(text, values);
 
           count += result.rowCount ?? 0;
+
+          // HOURS 주기 장비는 운전시간(분)을 equipment_runtime에 함께 적재한다.
+          // 업로드 일시는 now()가 아니라 LastestDate를 사용한다.
+          if (rows.IntervalTerm === 'HOURS' &&
+              lastestRunHour !== null &&
+              equipNo &&
+              !runtimeUpserted.has(equipNo)) {
+            const runtimeQuery =
+              `CALL usp_upsert_equipment_runtime(
+                     @vesselNo
+                   , @machineName
+                   , @equipNo
+                   , @equipName
+                   , @runtime::integer
+                   , @uploadDate::timestamp)`;
+
+            const runtimeParams: NamedParam[] = [
+              { name: 'vesselNo', value: vesselNo },
+              { name: 'machineName', value: rows.Machine },
+              { name: 'equipNo', value: equipNo },
+              { name: 'equipName', value: rows.Equipment },
+              { name: 'runtime', value: lastestRunHour },
+              { name: 'uploadDate', value: lastestDate },
+            ];
+
+            const { text: rtText, values: rtValues } = adaptNamedParams(runtimeQuery, runtimeParams);
+            await client.query(rtText, rtValues);
+
+            runtimeUpserted.add(equipNo);
+          }
         }
       }
 
@@ -366,6 +406,22 @@ export async function POST(req: Request) {
     console.error(err);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
+}
+
+// "hh:mm" 형식의 운전시간을 분(min) 단위 정수로 변환한다.
+// - "08:30" -> 510, "12:00" -> 720
+// - 빈 값/형식 불일치 시 null 반환 (DB에는 null 저장)
+function ConvertTimeToMinutes(value: any): number | null {
+  if (value === null || value === undefined || value === '') return null;
+
+  const match = String(value).trim().match(/^(\d{1,2}):(\d{1,2})$/);
+  if (match) {
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  }
+
+  // 이미 분 단위 숫자로 들어온 경우도 허용
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric) : null;
 }
 
 function ConvertExcelSerialToData(serial: number): String {

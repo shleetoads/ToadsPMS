@@ -27,6 +27,31 @@ interface ExcelData {
   [key: string]: any;
 }
 
+// Excel 시간값을 hh:mm 형식 문자열로 변환한다.
+// - 시간 서식 셀: 하루(24h)에 대한 분수값(number)으로 들어온다. (예: 0.5 -> "12:00")
+// - 텍스트로 입력된 경우: "8:30" 등을 "08:30"으로 정규화한다.
+// - 빈 값: null 반환.
+function formatExcelTimeToHHMM(value: any): string | null {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (typeof value === 'number') {
+    // 날짜 serial이 포함된 경우 소수부(시간)만 사용
+    const frac = value - Math.floor(value);
+    let totalMinutes = Math.round(frac * 24 * 60) % (24 * 60);
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+    const hh = Math.floor(totalMinutes / 60);
+    const mm = totalMinutes % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+
+  const match = String(value).trim().match(/^(\d{1,2}):(\d{1,2})/);
+  if (match) {
+    return `${match[1].padStart(2, '0')}:${match[2].padStart(2, '0')}`;
+  }
+
+  return String(value).trim();
+}
+
 export default function ShipManagementPage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [vessels, setVessels] = useState<Vessel[]>([]);
@@ -209,18 +234,25 @@ export default function ShipManagementPage() {
           "Location", 
           "SelfMaintenace", 
           "PIC", 
-          "Critical", 
-          "LastestDate", 
+          "Critical",
+          "LastestDate",
+          "LastestOperationTime",
           "Instructions",
           "PrevPMSCode",
-          "LastestOperatingTime",
         ];
-        
+
         const jsonData: ExcelData[] = XLSX.utils.sheet_to_json(worksheet, {header: headerMapping, range: 1});
-        setExcelData(jsonData);
-        
+
+        // LastestOperationTime을 hh:mm 형식 문자열로 정규화 (Excel 시간 셀은 하루의 분수값으로 들어옴)
+        const normalizedData: ExcelData[] = jsonData.map((row) => ({
+          ...row,
+          LastestOperationTime: formatExcelTimeToHHMM(row.LastestOperationTime),
+        }));
+
+        setExcelData(normalizedData);
+
         // 서버로 데이터 전송
-        sendDataToServer(jsonData);
+        sendDataToServer(normalizedData);
       };
       
       reader.readAsArrayBuffer(file);
