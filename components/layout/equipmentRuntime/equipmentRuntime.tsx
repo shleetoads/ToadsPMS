@@ -37,7 +37,8 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
 
   
   function getMaxRuntime(datas: EquipmentRuntimeData[]) {
-    return Math.max(...datas.map((data) => data.lastest_runtime))
+    if (!datas || datas.length === 0) return 0
+    return Math.max(...datas.map((data) => data.lastest_runtime ?? 0))
   }
 
   function getSimpleName(name: string) {
@@ -87,6 +88,8 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     
   const handleOnMachineClick = ( machineData: MachineRuntimeData ) => {
     if (!editable) return
+    // 장비 데이터가 없는(0 표시 전용) 카드는 입력 다이얼로그를 열지 않는다.
+    if (!machineData.equipment_runtime_datas || machineData.equipment_runtime_datas.length === 0) return
     setSelectedMachineData(machineData)
     setIsOpenDialog(true)
   }
@@ -276,8 +279,21 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
         <CardContent className={compact ? "px-3" : undefined}>
           <CardTitle className={compact ? "text-xs font-medium text-gray-600 mb-1" : "text-2xl font-semibold"}> G/E </CardTitle>
           <div className={compact ? "space-y-0.5" : "space-y-2"}>
-            {machineData.equipment_runtime_datas.map((equipData) =>
-              equipData.equip_name !== "EM'CY GENERATOR ENGINE" ? (
+            {(() => {
+              const generators = machineData.equipment_runtime_datas.filter(
+                (equipData) => equipData.equip_name !== "EM'CY GENERATOR ENGINE"
+              )
+
+              // 표시할 제너레이터가 없으면 0 하나만 표시한다.
+              if (generators.length === 0) {
+                return (
+                  <div className="flex justify-end">
+                    <Odometer value={0} size={compact ? "sm" : "xl"} />
+                  </div>
+                )
+              }
+
+              return generators.map((equipData) => (
                 <div
                   key={equipData.equip_no}
                   className="grid grid-cols-2 gap-2"
@@ -290,8 +306,8 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
                     <Odometer value={equipData.lastest_runtime} size={compact ? "sm" : "xl"} />
                   </div>
                 </div>
-              ) : null
-            )}
+              ))
+            })()}
           </div>
         </CardContent>
       </Card>
@@ -316,18 +332,27 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
   }
 
   const MachineTag = ({ machineDatas }: { machineDatas: MachineRuntimeData[] }) => {
-    machineDatas.sort((a, b) =>b.machine_name.localeCompare(a.machine_name))
+    // 모든 선박에 대해 MAIN ENGINE / G·E 두 카드를 항상 렌더링한다.
+    // 해당 장비 데이터가 없으면 빈 그룹으로 두어 0으로 표시한다.
+    const meData: MachineRuntimeData =
+      machineDatas.find((m) => m.machine_name === "MAIN ENGINE") ?? {
+        vessel_no: vesselNo,
+        machine_name: "MAIN ENGINE",
+        equipment_runtime_datas: [],
+      }
+    const geData: MachineRuntimeData =
+      machineDatas.find((m) => m.machine_name === "GENERATOR ENGINE") ?? {
+        vessel_no: vesselNo,
+        machine_name: "GENERATOR ENGINE",
+        equipment_runtime_datas: [],
+      }
+
     return(
       <div className={compact ? "grid grid-cols-2 md:grid-cols-4 gap-4" : "grid grid-cols-2 gap-6"}>
-        {machineDatas.map((machineData) =>
-          machineData.machine_name === "MAIN ENGINE" ? (
-            <MainEngineTag key={machineData.machine_name} machineData={machineData} />
-          ) : (
-            <GeneratorEngineTag key={machineData.machine_name} machineData={machineData} />
-          )
-        )}
+        <MainEngineTag key="MAIN ENGINE" machineData={meData} />
+        <GeneratorEngineTag key="GENERATOR ENGINE" machineData={geData} />
       </div>
-    )  
+    )
   }
 
 

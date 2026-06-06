@@ -27,29 +27,26 @@ interface ExcelData {
   [key: string]: any;
 }
 
-// Excel 시간값을 hh:mm 형식 문자열로 변환한다.
-// - 시간 서식 셀: 하루(24h)에 대한 분수값(number)으로 들어온다. (예: 0.5 -> "12:00")
-// - 텍스트로 입력된 경우: "8:30" 등을 "08:30"으로 정규화한다.
-// - 빈 값: null 반환.
-function formatExcelTimeToHHMM(value: any): string | null {
+// Excel의 LastestOperationTime(누적 운전시간)을 분(min) 단위 정수로 변환한다.
+// 운전시간은 "시:분" 형식이며 시간 자릿수에 제한이 없다. (예: "300:10" = 300시간 10분 = 18010분)
+// - 텍스트 셀: "300:10" 형태의 문자열로 들어온다.
+// - 시간/기간 서식 셀: 하루(1일)=1.0 기준 분수값(number)으로 들어온다. (예: 300:10 -> 12.5069)
+// - 빈 값: null 반환 (운전시간 기록이 불필요한 장비).
+function parseOperationTimeToMinutes(value: any): number | null {
   if (value === null || value === undefined || value === '') return null;
 
+  // Excel 시간/기간 서식 셀: 분수값 전체를 분으로 환산 (24h 초과 누적시간 포함)
   if (typeof value === 'number') {
-    // 날짜 serial이 포함된 경우 소수부(시간)만 사용
-    const frac = value - Math.floor(value);
-    let totalMinutes = Math.round(frac * 24 * 60) % (24 * 60);
-    if (totalMinutes < 0) totalMinutes += 24 * 60;
-    const hh = Math.floor(totalMinutes / 60);
-    const mm = totalMinutes % 60;
-    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return Math.round(value * 24 * 60);
   }
 
-  const match = String(value).trim().match(/^(\d{1,2}):(\d{1,2})/);
+  // 텍스트 "시:분" (시간 자릿수 무제한)
+  const match = String(value).trim().match(/^(\d+):(\d{1,2})$/);
   if (match) {
-    return `${match[1].padStart(2, '0')}:${match[2].padStart(2, '0')}`;
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
   }
 
-  return String(value).trim();
+  return null;
 }
 
 export default function ShipManagementPage() {
@@ -243,10 +240,10 @@ export default function ShipManagementPage() {
 
         const jsonData: ExcelData[] = XLSX.utils.sheet_to_json(worksheet, {header: headerMapping, range: 1});
 
-        // LastestOperationTime을 hh:mm 형식 문자열로 정규화 (Excel 시간 셀은 하루의 분수값으로 들어옴)
+        // LastestOperationTime(누적 운전시간)을 분(min) 단위 정수로 변환 (없으면 null)
         const normalizedData: ExcelData[] = jsonData.map((row) => ({
           ...row,
-          LastestOperationTime: formatExcelTimeToHHMM(row.LastestOperationTime),
+          LastestOperationTime: parseOperationTimeToMinutes(row.LastestOperationTime),
         }));
 
         setExcelData(normalizedData);

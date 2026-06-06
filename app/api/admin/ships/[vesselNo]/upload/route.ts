@@ -363,10 +363,10 @@ export async function POST(req: Request) {
 
           count += result.rowCount ?? 0;
 
-          // HOURS 주기 장비는 운전시간(분)을 equipment_runtime에 함께 적재한다.
+          // LastestOperationTime 값이 있는 장비 = 운전시간 기록 대상 → equipment_runtime에 적재.
+          // (더 이상 interval_term='HOURS' 여부로 판단하지 않음. 값 존재 = 기록 필요)
           // 업로드 일시는 now()가 아니라 LastestDate를 사용한다.
-          if (rows.IntervalTerm === 'HOURS' &&
-              lastestRunHour !== null &&
+          if (lastestRunHour !== null &&
               equipNo &&
               !runtimeUpserted.has(equipNo)) {
             const runtimeQuery =
@@ -408,19 +408,24 @@ export async function POST(req: Request) {
   }
 }
 
-// "hh:mm" 형식의 운전시간을 분(min) 단위 정수로 변환한다.
-// - "08:30" -> 510, "12:00" -> 720
-// - 빈 값/형식 불일치 시 null 반환 (DB에는 null 저장)
+// LastestOperationTime(누적 운전시간)을 분(min) 단위 정수로 변환한다.
+// 클라이언트에서 이미 분 단위로 변환해 전송하므로 숫자는 그대로 사용한다.
+// - 숫자: 분 단위 그대로 (예: 18010)
+// - 문자열 "시:분" (시간 자릿수 무제한, 안전망): "300:10" -> 18010
+// - 빈 값/형식 불일치 시 null 반환 (운전시간 기록이 불필요한 장비)
 function ConvertTimeToMinutes(value: any): number | null {
   if (value === null || value === undefined || value === '') return null;
 
-  const match = String(value).trim().match(/^(\d{1,2}):(\d{1,2})$/);
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? Math.round(value) : null;
+  }
+
+  const match = String(value).trim().match(/^(\d+):(\d{1,2})$/);
   if (match) {
     return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
   }
 
-  // 이미 분 단위 숫자로 들어온 경우도 허용
-  const numeric = Number(value);
+  const numeric = Number(String(value).trim());
   return Number.isFinite(numeric) ? Math.round(numeric) : null;
 }
 
