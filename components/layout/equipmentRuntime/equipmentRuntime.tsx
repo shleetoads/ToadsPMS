@@ -255,15 +255,15 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     return (
       <Card
         onClick={() => handleOnMachineClick(machineData)}
-        className={compact ? "gap-1 py-3" : undefined}
+        className={compact ? "gap-1 py-3" : "h-full"}
       >
-        <CardHeader className={compact ? "px-3" : undefined}>
-          <CardTitle className={compact ? "text-xs font-medium text-gray-600" : "text-2xl font-semibold"}>
+        <CardHeader className={compact ? "px-3" : "flex flex-row items-center justify-between space-y-0 pb-2"}>
+          <CardTitle className={compact ? "text-xs font-medium text-gray-600" : "text-sm font-medium"}>
             {machineData.machine_name}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className={compact ? "flex justify-center px-3" : "flex justify-center"}>
+        <CardContent className={compact ? "flex justify-center px-3" : undefined}>
           <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} size={compact ? "lg" : "2xl"} />
         </CardContent>
       </Card>
@@ -274,11 +274,11 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     return (
       <Card
         onClick={() => handleOnMachineClick(machineData)}
-        className={compact ? "gap-1 py-3" : undefined}
+        className={compact ? "gap-1 py-3" : "h-full"}
       >
         <CardContent className={compact ? "px-3" : undefined}>
-          <CardTitle className={compact ? "text-xs font-medium text-gray-600 mb-1" : "text-2xl font-semibold"}> G/E </CardTitle>
-          <div className={compact ? "space-y-0.5" : "space-y-2"}>
+          <CardTitle className={compact ? "text-xs font-medium text-gray-600 mb-1" : "text-sm font-medium mb-2"}> G/E </CardTitle>
+          <div className={compact ? "space-y-0.5" : "space-y-1"}>
             {(() => {
               const generators = machineData.equipment_runtime_datas.filter(
                 (equipData) => equipData.equip_name !== "EM'CY GENERATOR ENGINE"
@@ -288,7 +288,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
               if (generators.length === 0) {
                 return (
                   <div className="flex justify-end">
-                    <Odometer value={0} size={compact ? "sm" : "xl"} />
+                    <Odometer value={0} size={compact ? "sm" : "lg"} />
                   </div>
                 )
               }
@@ -298,12 +298,12 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
                   key={equipData.equip_no}
                   className="grid grid-cols-2 gap-2"
                 >
-                  <span className={compact ? "text-xs justify-self-start" : "text-xl justify-self-start"}>
+                  <span className={compact ? "text-xs justify-self-start" : "text-sm justify-self-start"}>
                     {getSimpleName(equipData.equip_name)}
                   </span>
 
                   <div className="justify-self-end">
-                    <Odometer value={equipData.lastest_runtime} size={compact ? "sm" : "xl"} />
+                    <Odometer value={equipData.lastest_runtime} size={compact ? "sm" : "lg"} />
                   </div>
                 </div>
               ))
@@ -348,7 +348,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
       }
 
     return(
-      <div className={compact ? "grid grid-cols-2 gap-4" : "grid grid-cols-2 gap-6"}>
+      <div className={compact ? "grid grid-cols-2 gap-4" : "grid grid-cols-2 gap-6 h-full"}>
         <MainEngineTag key="MAIN ENGINE" machineData={meData} />
         <GeneratorEngineTag key="GENERATOR ENGINE" machineData={geData} />
       </div>
@@ -357,7 +357,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
 
 
   return (
-    <div className={compact ? "" : "mb-6"}>
+    <div className={compact ? "" : "h-full"}>
       <MachineTag machineDatas={machineRuntimes} />
       {isOpenDialog && (
         <MachineDialog></MachineDialog>

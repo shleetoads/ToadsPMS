@@ -172,17 +172,16 @@ export default function ShipUserDashboard() {
             <p className="text-gray-600">{userInfo.ship_no} 선박의 유지보수 현황을 관리하세요</p>
           </div>
 
-          {/* 주요 지표 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* 주요 지표 카드 + Equipment Runtime (한 행, 6개) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
             <ExecutionDashBoardItem status="DELAYED" count={getTasksByStatus("DELAYED")} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="WEEKLY" count={getTasksByStatus('WEEKLY') + getTasksByCalendar("EXTENSION", 'WEEK')} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="MONTHLY" count={getTasksByStatus('MONTHLY') + getTasksByCalendar("EXTENSION", 'MONTH')} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="COMPLETE" count={getTasksByStatus("COMPLETE")} handleOnClick={(status) => {handleTaskClick(status)}} />
-          </div>
-          
-          {/* Equipment Runtime */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-            <EquipmentRuntime vesselNo={userInfo.ship_no}></EquipmentRuntime>
+
+            <div className="md:col-span-2 lg:col-span-2 h-full">
+              <EquipmentRuntime vesselNo={userInfo.ship_no} />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
