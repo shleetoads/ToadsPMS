@@ -144,9 +144,9 @@ export default function ShipTaskListPage() {
       case "지연":
         return <AlertTriangle className="w-4 h-4 text-red-600" />
       case "금주예정":
-        return <Calendar className="w-4 h-4 text-orange-600" />
+        return <Calendar className="w-4 h-4 text-blue-600" />
       case "금월예정":
-        return <Clock className="w-4 h-4 text-blue-600" />
+        return <Clock className="w-4 h-4 text-purple-600" />
       case "완료":
         return <CheckCircle className="w-4 h-4 text-green-600" />
       default:

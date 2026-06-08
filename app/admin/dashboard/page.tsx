@@ -87,10 +87,10 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">금주 예정 작업</CardTitle>
-                <Calendar className="h-4 w-4 text-orange-600" />
+                <Calendar className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{totalWeeklyTasks}</div>
+                <div className="text-2xl font-bold text-blue-600">{totalWeeklyTasks}</div>
                 <p className="text-xs text-muted-foreground">이번 주 예정</p>
               </CardContent>
             </Card>
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 items-stretch">
                       <Button
                         variant="outline"
                         className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent"
@@ -155,8 +155,8 @@ export default function AdminDashboard() {
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-orange-600" />
-                          <span className="text-lg font-bold text-orange-600">{vessel.weekly_tasks}</span>
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="text-lg font-bold text-blue-600">{vessel.weekly_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">금주 예정</span>
                       </Button>
@@ -168,8 +168,8 @@ export default function AdminDashboard() {
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-blue-600" />
-                            <span className="text-lg font-bold text-blue-600">{vessel.monthly_tasks}</span>
+                          <Clock className="h-4 w-4 text-purple-600" />
+                            <span className="text-lg font-bold text-purple-600">{vessel.monthly_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">금월 예정</span>
                       </Button>
@@ -186,11 +186,11 @@ export default function AdminDashboard() {
                         </div>
                         <span className="text-xs text-gray-600">금월 완료</span>
                       </Button>
-                    </div>
 
-                    {/* ME / G/E 운전 시간 (조회 전용) */}
-                    <div className="mt-4">
-                      <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} compact />
+                      {/* ME / G/E 운전 시간 (조회 전용) — 위 4개 버튼과 같은 행(6칸) */}
+                      <div className="md:col-span-2">
+                        <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} compact />
+                      </div>
                     </div>
 
                     {/* Progress bar for monthly completion rate */}

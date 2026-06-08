@@ -13,8 +13,8 @@ export default function ExecutionDashBoardItem({ status, count, handleOnClick }:
   const colorMap: Record<string, string> = {
     ALL: "text-black-600",
     DELAYED: "text-red-600",
-    WEEKLY: "text-orange-600",
-    MONTHLY: "text-blue-600",
+    WEEKLY: "text-blue-600",
+    MONTHLY: "text-purple-600",
     COMPLETE: "text-green-600",
     SCHEDULED: "text-orange-600",
   }
@@ -49,7 +49,7 @@ export default function ExecutionDashBoardItem({ status, count, handleOnClick }:
     let color = ""
 
     if(status == "ALL") //All Icon -> BLUE...
-      color = colorMap["MONTHLY"]
+      color = "text-blue-600"
     else
       color = colorMap[status ?? ""] ?? "text-gray-600"
 

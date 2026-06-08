@@ -348,7 +348,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
       }
 
     return(
-      <div className={compact ? "grid grid-cols-2 md:grid-cols-4 gap-4" : "grid grid-cols-2 gap-6"}>
+      <div className={compact ? "grid grid-cols-2 gap-4" : "grid grid-cols-2 gap-6"}>
         <MainEngineTag key="MAIN ENGINE" machineData={meData} />
         <GeneratorEngineTag key="GENERATOR ENGINE" machineData={geData} />
       </div>
@@ -357,7 +357,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
 
 
   return (
-    <div className="mb-6">
+    <div className={compact ? "" : "mb-6"}>
       <MachineTag machineDatas={machineRuntimes} />
       {isOpenDialog && (
         <MachineDialog></MachineDialog>
