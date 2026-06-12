@@ -1,7 +1,7 @@
 # ToadsPMS — Build → Push → Deploy 운영 매뉴얼
 
 > **이 문서의 목적**: 다른 세션·다른 사람이 열어서 **명령을 복사-붙여넣기만으로** 재빌드·재배포할 수 있게 한다.
-> 2026-04-21 초판. 마지막 성공 배포: 2026-06-05, ECR git sha `70bbb55` (시나리오 A).
+> 2026-04-21 초판. 마지막 성공 배포: 2026-06-12, ECR git sha `7f2472d` (시나리오 A).
 
 ---
 
@@ -534,6 +534,11 @@ print(f"OK: {output_path}")
 | 2026-04-23 | Sonnet/인간 | T-SQL 잔존 패턴 전수 제거. §7.2 활성 8파일 / MERGE alias LHS 23파일 / convert·format call-site 35+26파일 / §P2 shim DDL 작성 (`migration/sql/009_tsql_shim.sql`). **배포 전 §15 shim DDL 적용 필수.** | TBD | TBD |
 | 2026-06-04 | Opus/인간 | 관리자 대시보드에 ME/G·E 운전시간 조회 패널(`EquipmentRuntime`) 통합 + 태스크 합산 `Number()` 캐스팅. 시나리오 A(이미지 태그 교체, `:latest` force-new-deployment). 로그인 검증 toads 200 / yc 401(정상). Fargate IP 불변(43.201.253.218, 3.38.198.169)으로 RDS SG 변경 없음. | `f6873bf` | 변경 없음(시나리오 A) |
 | 2026-06-05 | Opus/인간 | PMS 업로드 템플릿 `LastestOperationTime`(hh:mm) 적재. `handleExcelUpload` 헤더 매핑 정정 + hh:mm→분 변환, `maintenance_plan.lastest_run_hour` 저장, HOURS 장비는 `equipment_runtime` upsert(upload_date=LastestDate). 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). Task Def rev 3, Fargate IP 불변(13.209.2.233, 43.201.34.19)으로 RDS SG 변경 없음. | `70bbb55` | 변경 없음(시나리오 A) |
+| 2026-06-08 | Opus/인간 | 대시보드 `EquipmentRuntime` compact 모드 추가 — 카드 패딩·폰트·그리드 축소, Odometer sm/lg 사이즈 도입, 선박 카드에서 compact 렌더링. 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). Fargate IP 변경(13.209.2.233, 3.38.173.36)되었으나 RDS SG에 이미 등록되어 있어 수동 동기화 불필요. | `feaff01` | 변경 없음(시나리오 A) |
+| 2026-06-08 | Opus/인간 | 작업 상태 색상 테마 통일(금주예정 주황→파랑, 금월예정 파랑→보라) — 대시보드·admin/ship 태스크·실행 화면 전반. 대시보드 선박 카드 6칸 그리드로 재배치, EquipmentRuntime(compact) 버튼 행 인라인. 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). Fargate IP 변경(3.38.163.11, 13.209.84.47)되었으나 RDS SG 자동 동기화 확인(수동 작업 불필요). | `618d8d0` | 변경 없음(시나리오 A) |
+| 2026-06-08 | Opus/인간 | ship 선박 대시보드를 admin과 동일하게 상태카드 4개+EquipmentRuntime(col-span-2) lg:grid-cols-6 한 행 통합. 비-compact 카드 h-full 정렬·G/E 타이포 정리, 업로드 템플릿 xlsx 갱신. 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). Fargate IP 변경(16.184.13.89, 3.36.89.164)되었으나 RDS SG 자동 동기화 확인. | `073d2a8` | 변경 없음(시나리오 A) |
+| 2026-06-09 | Opus/인간 | PMS 정비 업로드 템플릿 xlsx 갱신(2회 연속 — `981173d`, `2ee61e7`). 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). RDS SG 자동 동기화 확인. | `2ee61e7` | 변경 없음(시나리오 A) |
+| 2026-06-12 | Opus/인간 | 금주/금월 기준 달력화(이번주 월~일 / 해당월), ship dashboard·execution status 주/월 경계 통일. admin/maintenance·admin/tasks 필터를 ship execution status(6종: EXTENSION/DELAYED/COMPLETE/WEEKLY/MONTHLY/NORMAL)로 통일 + 뱃지·SCHEDULED. admin 대시보드 드릴(weekly/monthly/delayed/completed)·집계 배타적 처리(금주만/금월만/지연만), admin/tasks 예정일(due_date) 정렬. 시나리오 A. 로그인 검증 toads 200 / yc 401(정상). Fargate IP(13.124.131.75, 43.203.246.107) RDS SG 기등록 — 변경 없음. | `7f2472d` | 변경 없음(시나리오 A) |
 
 신규 배포할 때마다 한 행 추가하는 것을 권장.
 
