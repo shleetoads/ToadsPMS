@@ -31,9 +31,11 @@ export async function GET(req: Request) {
             , a.critical
             , to_char(a.due_date, 'YYYY-MM-DD') as due_date 
             , to_char(a.extension_date, 'YYYY-MM-DD') as extension_date 
-            , case when a.due_date < now()::timestamp and a.lastest_date < now()::timestamp and a.extension_date >= now()::timestamp then 'EXTENSION'
-			             when a.due_date < now()::timestamp then 'DELAYED' 
-                   when a.lastest_date >= date_trunc('month', now())::timestamp and a.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 'COMPLATE'
+            , case when (a.extension_date)::date is not null and (a.due_date)::date is not null and (a.extension_date)::date > (a.due_date)::date then 'EXTENSION'
+                   when (a.due_date)::date is not null and (now()::timestamp)::date > (a.due_date)::date then 'DELAYED'
+                   when (a.lastest_date)::date is not null and (a.lastest_date)::date >= ((now()::timestamp)::date + make_interval(months => (-1)::int)) and (a.lastest_date)::date <= (now()::timestamp)::date then 'COMPLETE'
+                   when (a.due_date)::date is not null and (a.due_date)::date >= (now()::timestamp)::date and (a.due_date)::date < (date_trunc('week', now())::date + 7) then 'WEEKLY'
+                   when (a.due_date)::date is not null and (a.due_date)::date >= (now()::timestamp)::date and (a.due_date)::date < (date_trunc('month', now()) + interval '1 month')::date then 'MONTHLY'
                    else 'NORMAL' end as status
             , ((a.due_date)::date - (now()::timestamp)::date) as days_until
             , ((a.extension_date)::date - (now()::timestamp)::date) as extension_days_until

@@ -64,10 +64,16 @@ export default function TaskListPage() {
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter(task =>
-        task.status === statusFilter
+        statusFilter === "SCHEDULED"
+          ? ["NORMAL", "WEEKLY", "MONTHLY"].includes(task.status ?? "")
+          : task.status === statusFilter
       )
     }
-    setFilteredTasks(filtered);
+    // 예정일(due_date) 오름차순 정렬 — 가까운 예정일 우선
+    const sorted = [...filtered].sort((a, b) =>
+      (a.due_date ?? "").localeCompare(b.due_date ?? "")
+    )
+    setFilteredTasks(sorted);
   }, [maintenances, taskType, vesselNo, searchTerm, statusFilter])
 
   if (!userInfo) return null
@@ -80,7 +86,11 @@ export default function TaskListPage() {
         return <Badge variant="outline">연장</Badge>
       case "NORMAL":
         return <Badge variant="secondary">예정</Badge>
-      case "COMPLATE":
+      case "WEEKLY":
+        return <Badge variant="secondary">금주 예정</Badge>
+      case "MONTHLY":
+        return <Badge variant="secondary">금월 예정</Badge>
+      case "COMPLETE":
         return <Badge variant="default">완료</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
@@ -91,11 +101,11 @@ export default function TaskListPage() {
     switch (status) {
       case "DELAYED":
         return <AlertTriangle className="w-4 h-4 text-red-600" />
-      case "weekly":
+      case "WEEKLY":
         return <Calendar className="w-4 h-4 text-blue-600" />
-      case "monthly":
+      case "MONTHLY":
         return <Clock className="w-4 h-4 text-purple-600" />
-      case "completed":
+      case "COMPLETE":
         return <CheckCircle className="w-4 h-4 text-green-600" />
       default:
         return <Clock className="w-4 h-4" />
@@ -175,10 +185,12 @@ export default function TaskListPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">전체 상태</SelectItem>
+                    <SelectItem value="WEEKLY">금주 예정</SelectItem>
+                    <SelectItem value="MONTHLY">금월 예정</SelectItem>
+                    <SelectItem value="SCHEDULED">예정</SelectItem>
                     <SelectItem value="DELAYED">지연</SelectItem>
                     <SelectItem value="EXTENSION">연장</SelectItem>
-                    <SelectItem value="NORMAL">예정</SelectItem>
-                    <SelectItem value="COMPLATE">완료</SelectItem>
+                    <SelectItem value="COMPLETE">완료</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

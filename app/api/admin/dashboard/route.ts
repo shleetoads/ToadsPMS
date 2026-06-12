@@ -10,9 +10,9 @@ export async function GET(req: Request) {
             , a.vessel_name
             , a.vessel_short_name
             , a.imo_no
-            , sum(case when b.due_date < now()::timestamp then 1 else 0 end) as delayed_tasks
-            , sum(case when b.due_date >= date_trunc('week', now())::timestamp and b.due_date <= (date_trunc('week', now()) + interval '7 day')::timestamp then 1 else 0 end) as weekly_tasks
-            , sum(case when b.due_date >= date_trunc('month', now())::timestamp and b.due_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as monthly_tasks
+            , sum(case when (b.due_date)::date < (now()::timestamp)::date then 1 else 0 end) as delayed_tasks
+            , sum(case when (b.due_date)::date >= (now()::timestamp)::date and (b.due_date)::date < (date_trunc('week', now())::date + 7) then 1 else 0 end) as weekly_tasks
+            , sum(case when (b.due_date)::date >= (date_trunc('week', now())::date + 7) and (b.due_date)::date < (date_trunc('month', now()) + interval '1 month')::date then 1 else 0 end) as monthly_tasks
             , sum(case when b.lastest_date >= date_trunc('month', now())::timestamp and b.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as completed_tasks
             , sum(case when b.due_date >= date_trunc('month', now())::timestamp and b.due_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) +
               sum(case when b.lastest_date >= date_trunc('month', now())::timestamp and b.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 1 else 0 end) as total_tasks

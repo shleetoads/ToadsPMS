@@ -209,14 +209,16 @@ SELECT
            AND lastest_date_only <= today_date
           THEN 'COMPLETE'
 
+          -- 금주: 오늘이 속한 주(월~일)에 마감인 항목만
           WHEN due_date_only IS NOT NULL
-           AND ((due_date_only)::date - (today_date)::date) >= 0
-           AND ((due_date_only)::date - (today_date)::date) < 7
+           AND due_date_only >= today_date
+           AND due_date_only < (date_trunc('week', now())::date + 7)
           THEN 'WEEKLY'
 
+          -- 금월: 오늘이 속한 해당 월에 마감인 항목만 (금주 제외분)
           WHEN due_date_only IS NOT NULL
-           AND ((due_date_only)::date - (today_date)::date) >= 0
-           AND ((due_date_only)::date - (today_date)::date) < 30
+           AND due_date_only >= today_date
+           AND due_date_only < (date_trunc('month', now()) + interval '1 month')::date
           THEN 'MONTHLY'
 
           ELSE 'NORMAL'

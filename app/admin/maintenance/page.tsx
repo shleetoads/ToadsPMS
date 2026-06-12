@@ -207,10 +207,11 @@ export default function MaintenanceWorkManagementPage() {
   const filterByStatus = (items: Maintenance[], status: string): Maintenance[] => {
     return items
       .map((item) => {
+        const matchesScheduled = item.type === "TASK" && status === "SCHEDULED" && ["NORMAL", "WEEKLY", "MONTHLY"].includes(item.status ?? "")
         const matchesStatus = item.status === status
         const filteredChildren = item.children ? filterByStatus(item.children, status) : []
 
-        if (matchesStatus || filteredChildren.length > 0) {
+        if (matchesStatus || matchesScheduled || filteredChildren.length > 0) {
           return {
             ...item,
             children: filteredChildren,
@@ -255,7 +256,11 @@ export default function MaintenanceWorkManagementPage() {
         return <Badge variant="outline">연장</Badge>
       case "NORMAL":
         return <Badge variant="secondary">예정</Badge>
-      case "COMPLATE":
+      case "WEEKLY":
+        return <Badge variant="secondary">금주 예정</Badge>
+      case "MONTHLY":
+        return <Badge variant="secondary">금월 예정</Badge>
+      case "COMPLETE":
         return <Badge variant="default">완료</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
@@ -475,7 +480,7 @@ export default function MaintenanceWorkManagementPage() {
                 <Calendar className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus(maintenanceData, "NORMAL")}</div>
+                <div className="text-2xl font-bold text-orange-600">{getTasksByStatus(maintenanceData, "NORMAL") + getTasksByStatus(maintenanceData, "WEEKLY") + getTasksByStatus(maintenanceData, "MONTHLY")}</div>
                 <p className="text-xs text-muted-foreground">예정된 작업</p>
               </CardContent>
             </Card>
@@ -486,7 +491,7 @@ export default function MaintenanceWorkManagementPage() {
                 <Settings className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{getTasksByStatus(maintenanceData, "COMPLATE")}</div>
+                <div className="text-2xl font-bold text-green-600">{getTasksByStatus(maintenanceData, "COMPLETE")}</div>
                 <p className="text-xs text-muted-foreground">완료된 작업</p>
               </CardContent>
             </Card>
@@ -538,10 +543,12 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">전체 상태</SelectItem>
+                    <SelectItem value="WEEKLY">금주 예정</SelectItem>
+                    <SelectItem value="MONTHLY">금월 예정</SelectItem>
+                    <SelectItem value="SCHEDULED">예정</SelectItem>
                     <SelectItem value="DELAYED">지연</SelectItem>
-                    <SelectItem value="NORMAL">예정</SelectItem>
                     <SelectItem value="EXTENSION">연장</SelectItem>
-                    <SelectItem value="COMPLATE">완료</SelectItem>
+                    <SelectItem value="COMPLETE">완료</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex-1">

@@ -31,10 +31,12 @@ export async function GET(req: Request) {
             , to_char(b.due_date, 'YYYY-MM-DD') as due_date 
             , to_char(b.next_due_date, 'YYYY-MM-DD') as next_due_date 
             , to_char(b.extension_date, 'YYYY-MM-DD') as extension_date 
-            , case when b.due_date < now()::timestamp and b.lastest_date < now()::timestamp and b.extension_date >= now()::timestamp then 'EXTENSION'
-                    when b.due_date < now()::timestamp then 'DELAYED' 
-                    when b.lastest_date >= date_trunc('month', now())::timestamp and b.lastest_date < (date_trunc('month', now()) + interval '1 month')::timestamp then 'COMPLATE'
-                    else 'NORMAL' end as status
+            , case when (b.extension_date)::date is not null and (b.due_date)::date is not null and (b.extension_date)::date > (b.due_date)::date then 'EXTENSION'
+                   when (b.due_date)::date is not null and (now()::timestamp)::date > (b.due_date)::date then 'DELAYED'
+                   when (b.lastest_date)::date is not null and (b.lastest_date)::date >= ((now()::timestamp)::date + make_interval(months => (-1)::int)) and (b.lastest_date)::date <= (now()::timestamp)::date then 'COMPLETE'
+                   when (b.due_date)::date is not null and (b.due_date)::date >= (now()::timestamp)::date and (b.due_date)::date < (date_trunc('week', now())::date + 7) then 'WEEKLY'
+                   when (b.due_date)::date is not null and (b.due_date)::date >= (now()::timestamp)::date and (b.due_date)::date < (date_trunc('month', now()) + interval '1 month')::date then 'MONTHLY'
+                   else 'NORMAL' end as status
             , ((b.due_date)::date - (now()::timestamp)::date) as days_until
             , ((b.extension_date)::date - (now()::timestamp)::date) as extension_days_until
           from vessel as a
@@ -72,8 +74,8 @@ export async function GET(req: Request) {
           and b.equip_no = c.equip_no
         where a.vessel_no = @vesselNo
           and a.use_yn = 'Y'
-          and b.due_date >= date_trunc('month', now())::timestamp and b.due_date < (date_trunc('month', now()) + interval '1 month')::timestamp
-          and b.extension_date is null or (b.extension_date >= date_trunc('month', now())::timestamp and b.extension_date < (date_trunc('month', now()) + interval '1 month')::timestamp)`,
+          and (b.due_date)::date >= (date_trunc('week', now())::date + 7)
+          and (b.due_date)::date < (date_trunc('month', now()) + interval '1 month')::date`,
       [
         { name: 'vesselNo', value: vessel_no },
       ]
