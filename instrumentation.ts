@@ -1,45 +1,16 @@
-// src/instrumentation.ts 또는 instrumentation.ts
+// instrumentation.ts
+// 서버 시작 시 1회 호출된다(Next.js 15 stable).
+// 엣지 노드에서 회선 감지 감시자(watcher)를 기동한다.
+// 설계: MD/00.Build/SHIP_EDGE_SYNC_DESIGN_2026-07-01.md §8 (D5)
 
-// 이 함수는 서버가 시작될 때 딱 한 번만 호출됩니다.
 export async function register() {
-  const siteUrl = process.env.LOCAL_SITE_URL;
-        
-  if (process.env.NODE_ENV === 'production') {
-    // const cron = await import('node-cron');
-    // console.log('⏰ Scheduler has been initialized.');
+  // register()는 nodejs/edge 양 런타임에서 호출됨.
+  // db(pg)·dotenv는 node 전용이므로 nodejs 런타임에서만 import (Edge 컴파일 'path' 오류 방지).
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-    // 매일 자정에 실행되는 스케쥴을 설정
-    // Cron 표현식: '분 시 일 월 요일'
-    // 예: '0 0 * * *' -> 매일 0시 0분에 실행
-    // cron.schedule('*/10 * * * *', () => {
-    //   console.log('🚀 Running a scheduled job at midnight...');
-    //   fetch(`${siteUrl}/api/scheduler/send`)
-    //     .then(res => {
-    //       if (!res.ok) {
-    //         console.error('Failed to trigger cron job:', res.statusText);
-    //       }
-    //       return res.json();
-    //     })
-    //     .then(data => {
-    //       console.log('Cron job trigger response:', data);
-    //     })
-    //     .catch(err => {
-    //       console.error('Error triggering cron job:', err);
-    //     });
-
-    //   fetch(`${siteUrl}/api/scheduler/receive`)
-    //     .then(res => {
-    //       if (!res.ok) {
-    //         console.error('Failed to trigger cron job:', res.statusText);
-    //       }
-    //       return res.json();
-    //     })
-    //     .then(data => {
-    //       console.log('Cron job trigger response:', data);
-    //     })
-    //     .catch(err => {
-    //       console.error('Error triggering cron job:', err);
-    //     });
-    // });
+  // 중앙(central)에서는 감시자 미기동. 엣지에서 SYNC_WATCHER=on 일 때만.
+  if (process.env.SYNC_WATCHER === 'on' && process.env.NODE_ROLE !== 'central') {
+    const { startWatcher } = await import('@/lib/sync/watcher');
+    startWatcher();
   }
 }

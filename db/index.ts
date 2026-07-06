@@ -11,8 +11,21 @@ export async function getPool(): Promise<Pool> {
       host: process.env.DB_HOST!,
       port: Number(process.env.DB_PORT) || 5432,
       database: process.env.DB_NAME!,
-      // RDS는 SSL 강제. 운영 승격 시 RDS CA 번들 검증으로 교체 예정.
-      ssl: { rejectUnauthorized: false },
+      // RDS는 SSL 강제. 엣지 로컬 Postgres/로컬 개발은 SSL 미지원 → DB_SSL=false 로 비활성.
+      // 운영(RDS) 승격 시 RDS CA 번들 검증으로 교체 예정.
+      ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
+      // GAP-7: 회선 불안정한 선상/DB 도달 불가 시 60s 행 방지.
+      // 연결 획득·유휴·질의 시간에 상한을 둬 빠르게 실패시킨다.
+      connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT_MS) || 3000,
+      idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS) || 30000,
+      statement_timeout: Number(process.env.DB_STATEMENT_TIMEOUT_MS) || 15000,
+      max: Number(process.env.DB_POOL_MAX) || 10,
+      keepAlive: true,
+    });
+
+    // 유휴 클라이언트 오류로 인한 프로세스 크래시 방지(로깅 후 계속).
+    pool.on('error', (err) => {
+      console.error('[db] idle client error:', err.message);
     });
   }
   return pool;
