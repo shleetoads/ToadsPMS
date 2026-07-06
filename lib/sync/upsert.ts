@@ -49,7 +49,7 @@ export async function upsertRows(
   return affected;
 }
 
-// 중앙 /api/data/all/get 응답 배열 → (테이블, PK) 매핑
+// 중앙 /api/data/all/get 응답 배열 → (테이블, PK) 매핑 (평상시 수신: 다운로드 마스터)
 export const RECEIVE_TABLE_MAP: Array<{ key: string; table: string; pk: string[] }> = [
   { key: 'vessels',      table: 'vessel',                pk: ['vessel_no'] },
   { key: 'equipments',   table: 'equipment',             pk: ['equip_no', 'vessel_no', 'machine_name'] },
@@ -58,4 +58,24 @@ export const RECEIVE_TABLE_MAP: Array<{ key: string; table: string; pk: string[]
   { key: 'extensions',   table: 'maintenance_extension', pk: ['equip_no', 'section_code', 'plan_code', 'vessel_no', 'extension_seq'] },
   { key: 'materials',    table: 'material',              pk: ['vessel_no', 'material_code'] },
   { key: 'receives',     table: 'receive',               pk: ['receive_no', 'vessel_no'] },
+];
+
+// 온보딩 전체 시드 (/api/sync/seed 응답) → (테이블, PK) 매핑.
+// bundle 키 == 테이블명. 마스터 + 이력 + machine + user 전부.
+// 적용 순서 = FK 의존성 순서(부모 먼저).
+export const SEED_TABLE_MAP: Array<{ table: string; pk: string[] }> = [
+  { table: 'vessel',                pk: ['vessel_no'] },
+  { table: 'user',                  pk: ['account_no'] },
+  { table: 'machine',               pk: ['vessel_no', 'machine_name'] },
+  { table: 'equipment',             pk: ['equip_no', 'vessel_no', 'machine_name'] },
+  { table: 'section',               pk: ['equip_no', 'section_code', 'vessel_no'] },
+  { table: 'maintenance_plan',      pk: ['equip_no', 'section_code', 'plan_code', 'vessel_no'] },
+  { table: 'maintenance_extension', pk: ['equip_no', 'section_code', 'plan_code', 'vessel_no', 'extension_seq'] },
+  { table: 'warehouse',             pk: ['vessel_no', 'warehouse_no'] },
+  { table: 'material',              pk: ['vessel_no', 'material_code'] },
+  { table: 'maintenance_work',      pk: ['vessel_no', 'work_order'] },
+  { table: 'used_parts',            pk: ['vessel_no', 'work_order', 'part_seq'] },
+  { table: 'receive',               pk: ['receive_no', 'vessel_no'] },
+  { table: 'release',               pk: ['vessel_no', 'release_no'] },
+  { table: 'loss',                  pk: ['vessel_no', 'loss_no'] },
 ];
