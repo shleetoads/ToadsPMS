@@ -40,6 +40,8 @@ export async function POST(req: Request) {
 
   try {
     const bundle: Record<string, any[]> = {};
+    // 전역 참조: tenant (user FK 대상). vessel 스코프 아님 → 전량.
+    bundle['tenant'] = await query(`select * from tenant`);
     for (const t of VESSEL_TABLES) {
       bundle[t] = await query(`select * from "${t}" where vessel_no = @v`, [{ name: 'v', value: vesselNo }]);
     }

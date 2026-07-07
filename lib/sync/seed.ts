@@ -37,14 +37,14 @@ export async function runSeed(opts: {
   const counts: Record<string, number> = {};
   await withTransaction(async (client) => {
     await client.query("SET LOCAL app.sync_apply = 'on'"); // 시드 행이 로컬 델타에 재진입하지 않도록
-    for (const { table, pk } of SEED_TABLE_MAP) {
+    for (const { table, pk, overriding } of SEED_TABLE_MAP) {
       const rows = (bundle[table] ?? []).map((r) => {
         const { change_seq, ...rest } = r; // 중앙 seq 제거(엣지는 자기 시퀀스 사용)
         return rest;
       });
       // stampReceiveDate=false: 시드 행엔 이미 last_receive_date 가 포함돼 있고(중복 할당 방지),
       // user 처럼 last_receive_date 컬럼이 없는 테이블도 있으므로 헬퍼의 자동 스탬프를 끈다.
-      counts[table] = await upsertRows(client, table, pk, rows, false);
+      counts[table] = await upsertRows(client, table, pk, rows, false, overriding);
     }
   });
 
