@@ -23,11 +23,24 @@ async function probe(remote: string, timeoutMs: number): Promise<boolean> {
   }
 }
 
-/** 로컬 수신 엔드포인트를 호출. 성공 여부 반환. */
-async function triggerReceive(localUrl: string): Promise<boolean> {
+/** 최초 온보딩(빈 DB면 자동 시드). 중앙 미지원/실패는 비치명적. */
+async function triggerOnboard(localUrl: string): Promise<void> {
+  try {
+    const res = await fetch(`${localUrl}/api/scheduler/seed?ifEmpty=1`);
+    const j: any = await res.json().catch(() => ({}));
+    if (res.ok && j?.seeded) console.log(`[watcher] 최초 온보딩 시드 완료: total=${j.total}`);
+    else if (!res.ok) console.error('[watcher] 온보딩 시드 실패(비치명적):', j?.message ?? `HTTP ${res.status}`);
+  } catch (err) {
+    console.error('[watcher] 온보딩 시드 건너뜀:', (err as Error).message);
+  }
+}
+
+/** 온라인 전이 시: (빈 DB면)자동 온보딩 → 증분 수신. 수신 성공 여부 반환. */
+async function triggerOnline(localUrl: string): Promise<boolean> {
   if (syncing) return false;
   syncing = true;
   try {
+    await triggerOnboard(localUrl);            // 최초 1회만 실제 시드(ifEmpty)
     const res = await fetch(`${localUrl}/api/scheduler/receive`);
     const j: any = await res.json().catch(() => ({}));
     if (res.ok && j?.success) {
@@ -37,7 +50,7 @@ async function triggerReceive(localUrl: string): Promise<boolean> {
     console.error('[watcher] receive failed:', j?.message ?? `HTTP ${res.status}`);
     return false;
   } catch (err) {
-    console.error('[watcher] receive trigger error:', (err as Error).message);
+    console.error('[watcher] online 처리 오류:', (err as Error).message);
     return false;
   } finally {
     syncing = false;
@@ -49,7 +62,9 @@ export function startWatcher(): void {
 
   const remote = process.env.REMOTE_SITE_URL;
   const vessel = process.env.VESSEL;
-  const localUrl = process.env.LOCAL_SITE_URL || 'http://localhost:30001';
+  // 자기 자신(같은 프로세스의 HTTP 서버)을 호출해야 하므로 항상 자기 PORT 사용.
+  // (LOCAL_SITE_URL 은 중앙/다른 인스턴스를 가리킬 수 있어 신뢰 불가)
+  const localUrl = `http://127.0.0.1:${process.env.PORT || 30001}`;
   if (!remote || !vessel) {
     console.log('[watcher] disabled (REMOTE_SITE_URL/VESSEL 미설정)');
     return;
@@ -68,8 +83,8 @@ export function startWatcher(): void {
     }
     // 도달 가능하지만 아직 online 미확정 → 수신 시도(성공해야 online 확정 = 실패 시 다음 tick 재시도)
     if (!online) {
-      console.log('[watcher] connectivity offline→online → 자동 수신 실행');
-      const ok = await triggerReceive(localUrl);
+      console.log('[watcher] connectivity offline→online → 온보딩/수신 실행');
+      const ok = await triggerOnline(localUrl);
       if (ok) online = true;
     }
   };
