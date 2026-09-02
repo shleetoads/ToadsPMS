@@ -1,2 +1,3 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Windows 배치 스크립트는 반드시 CRLF (cmd.exe 요구)
+*.bat text eol=crlf
+*.cmd text eol=crlf
