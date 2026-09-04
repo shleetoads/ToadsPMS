@@ -250,6 +250,18 @@ export default function MaintenanceWorkManagementPage() {
     setExpandedItems(newExpanded)
   }
 
+  // 행(row) 아무 곳이나 클릭 시: 하위 항목이 있으면 펼침/접힘, 최하위 작업이면 수정 창 열기
+  const handleRowClick = (item: Maintenance) => {
+    if (item.children && item.children.length > 0) {
+      toggleExpanded(item.key || '')
+      return
+    }
+
+    if (item.type === "TASK") {
+      handleEditMaintenanceDialogOpen(item)
+    }
+  }
+
   const getCycleText = (interval?: number, intervalTerm?: string) => {
     if (!interval || !intervalTerm) return ""
 
@@ -287,17 +299,19 @@ export default function MaintenanceWorkManagementPage() {
     return items.map((item) => (
       <div key={item.key} className={`${level > 0 ? "ml-6" : ""}`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
-          <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
+          <div
+            className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50"
+            style={{cursor: 'pointer'}}
+            onClick={() => handleRowClick(item)}
+          >
             {item.children && item.children.length > 0 && (
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-0 h-auto" style={{cursor: 'pointer'}}>
-                  {expandedItems.has(item.key || '') ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
+              <span className="flex items-center justify-center w-6 h-6 text-gray-600">
+                {expandedItems.has(item.key || '') ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </span>
             )}
 
             <div className="flex-1 flex items-center justify-between">
@@ -338,7 +352,7 @@ export default function MaintenanceWorkManagementPage() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => handleEditSectionDialogOpen(item)} 
+                    onClick={(e) => { e.stopPropagation(); handleEditSectionDialogOpen(item); }} 
                     style={{cursor: 'pointer'}}
                   >
                     <Edit className="w-4 h-4" />
@@ -353,7 +367,7 @@ export default function MaintenanceWorkManagementPage() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => handleEditMaintenanceDialogOpen(item)} 
+                    onClick={(e) => { e.stopPropagation(); handleEditMaintenanceDialogOpen(item); }} 
                     style={{cursor: 'pointer'}}
                   >
                     <Edit className="w-4 h-4" />
@@ -1124,7 +1138,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {/* 섹션 수정 다이얼로그 */}
           <Dialog open={isEditSectionDialogOpen} onOpenChange={setIsEditSectionDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl" draggable>
               <DialogHeader>
                 <DialogTitle>섹션 정보 수정</DialogTitle>
                 <DialogDescription>섹션의 정보를 수정하세요</DialogDescription>
@@ -1196,7 +1210,7 @@ export default function MaintenanceWorkManagementPage() {
           
           {/* 정비 수정 다이얼로그 */}
           <Dialog open={isEditMaintenanceDialogOpen} onOpenChange={setIsEditMaintenanceDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl" draggable>
               <DialogHeader>
                 <DialogTitle>유지보수 작업 정보 수정</DialogTitle>
                 <DialogDescription>유지보수 작업의 정보를 수정하세요</DialogDescription>
@@ -1215,11 +1229,13 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="plan_name">작업명</Label>
-                    <Input 
-                      id="plan_name" 
+                    <Input
+                      id="plan_name"
                       value={selectedMaintenance.plan_name}
-                      placeholder="작업명을 입력하세요" 
+                      title={selectedMaintenance.plan_name || ''}
+                      placeholder="작업명을 입력하세요"
                       onChange={(e) => setSelectedMaintenance((prev: any) => ({ ...prev, plan_name: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div className="space-y-2">
