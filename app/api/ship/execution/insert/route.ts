@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, execute, withTransaction, adaptNamedParams, NamedParam } from '@/db';
 import { MaintenanceWork } from '@/types/vessel/maintenance_work';
 import { Maintenance } from '@/types/dashboard/maintenance';
+import { isEmergencyGenerator } from '@/lib/equipment';
 
 export async function POST(req: Request) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
               @vesselNo
             , (select coalesce(max(work_order), 0) + 1
                  from maintenance_work
-                where vessel_no = @vesselNo)
+                where vessel_no = @vesselNo::varchar)
             , @equipNo
             , @sectionCode
             , @planCode
@@ -69,18 +70,21 @@ export async function POST(req: Request) {
       let result = await client.query(text, values);
       total += result.rowCount ?? 0;
 
-      queryString = `
-        CALL usp_upsert_equipment_runtime(@vessel_no, @machine_name, @equip_no, @equip_name, @runtime)`;
-      params = [
-        { name: 'vessel_no', value: item.vessel_no },
-        { name: 'machine_name', value: item.machine_name },
-        { name: 'equip_no', value: item.equip_no },
-        { name: 'equip_name', value: item.equip_name },
-        { name: 'runtime', value: item.lastest_run_hour }
-      ];
+      // 비상 발전기는 운전시간을 누적 관리하지 않으므로 기록하지 않는다.
+      if (!isEmergencyGenerator(item.equip_name, item.machine_name)) {
+        queryString = `
+          CALL usp_upsert_equipment_runtime(@vessel_no, @machine_name, @equip_no, @equip_name, @runtime)`;
+        params = [
+          { name: 'vessel_no', value: item.vessel_no },
+          { name: 'machine_name', value: item.machine_name },
+          { name: 'equip_no', value: item.equip_no },
+          { name: 'equip_name', value: item.equip_name },
+          { name: 'runtime', value: item.lastest_run_hour }
+        ];
 
-      ({ text, values } = adaptNamedParams(queryString, params));
-      result = await client.query(text, values);
+        ({ text, values } = adaptNamedParams(queryString, params));
+        result = await client.query(text, values);
+      }
 
       queryString = `
       select max(work_order) as work_order
@@ -123,7 +127,7 @@ export async function POST(req: Request) {
               , @workOrder
               , (select coalesce(max(part_seq), 0) + 1
                     from used_parts
-                  where vessel_no = @vesselNo
+                  where vessel_no = @vesselNo::varchar
                     and work_order = @workOrder)
               , @warehouseNo
               , @materialCode
@@ -180,7 +184,7 @@ export async function POST(req: Request) {
                 @vesselNo
               , (select 'O0' || to_char(now(), 'YYMM') || lpad((coalesce(right(max(release_no), 3)::int, 0) + 1)::text, 3, '0')
                     from "release"
-                  where vessel_no = @vesselNo
+                  where vessel_no = @vesselNo::varchar
                     and release_type = 'O0')
               , @materialCode
               , now()::timestamp

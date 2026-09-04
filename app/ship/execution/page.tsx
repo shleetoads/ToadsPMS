@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { vesselRequireAuth } from "@/lib/auth"
+import { isEmergencyGenerator } from "@/lib/equipment"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -373,6 +374,11 @@ export default function MaintenanceExecutionPage() {
     return `${Math.floor(runtime / 60)} hr ${runtime % 60} min`;
   }
 
+  // 비상 발전기는 운전시간을 관리하지 않으므로, 시간 주기 작업이라도
+  // 정비 기입 화면에서 운전시간을 입력받지도, 표시하지도 않는다.
+  const usesRuntime = (item: { interval_term?: string; equip_name?: string; machine_name?: string }) =>
+    item.interval_term === 'HOURS' && !isEmergencyGenerator(item.equip_name, item.machine_name)
+
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "DELAYED":
@@ -474,10 +480,10 @@ export default function MaintenanceExecutionPage() {
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{item.specifications}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span>최근정비: {item.interval_term === 'HOURS'? `${item.lastest_date} (${getRuntimeStr(item.lastest_run_hour)})` : item.lastest_date}</span>
+                  <span>최근정비: {usesRuntime(item)? `${item.lastest_date} (${getRuntimeStr(item.lastest_run_hour)})` : item.lastest_date}</span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  {item.interval_term === "HOURS" ?(
+                  {usesRuntime(item) ?(
                     <span>예정일: {`${item.extension_date ? item.extension_date : item.due_date} (${getRuntimeStr((item.lastest_run_hour ?? 0 )+ (item.interval ?? 0) *60) })`}</span>
                   ) : (
                     <span>예정일: {item.extension_date ? item.extension_date : item.due_date}</span>
@@ -1128,7 +1134,7 @@ export default function MaintenanceExecutionPage() {
                             </div>
                           </div>
                           
-                        {task.interval_term === 'HOURS' && (
+                        {usesRuntime(task) && (
                           <EquipmentRuntimeInput
                             equip_name={task.equip_name}
                             machine_name={task.machine_name}
@@ -1246,7 +1252,7 @@ export default function MaintenanceExecutionPage() {
                     </div>
                   </div>
 
-                  {selectedWork.interval_term === 'HOURS' && (
+                  {usesRuntime(selectedWork) && (
                     <EquipmentRuntimeInput
                       equip_name={selectedWork.equip_name}
                       machine_name={selectedWork.machine_name}

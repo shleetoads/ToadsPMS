@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withTransaction, adaptNamedParams, NamedParam, query } from '@/db';
 import { MaintenanceWork } from '@/types/vessel/maintenance_work';
 import { Maintenance } from '@/types/dashboard/maintenance';
+import { isEmergencyGenerator } from '@/lib/equipment';
 
 export async function POST(req: Request) {
   try {
@@ -72,18 +73,21 @@ export async function POST(req: Request) {
         let r = await client.query(text, values);
         count += r.rowCount ?? 0;
 
-        queryString = `
-          CALL usp_upsert_equipment_runtime(@vessel_no, @machine_name, @equip_no, @equip_name, @runtime)`;
-        params = [
-          { name: 'vessel_no', value: item.vessel_no },
-          { name: 'machine_name', value: item.machine_name },
-          { name: 'equip_no', value: item.equip_no },
-          { name: 'equip_name', value: item.equip_name },
-          { name: 'runtime', value: item.lastest_run_hour }
-        ];
+        // 비상 발전기는 운전시간을 누적 관리하지 않으므로 기록하지 않는다.
+        if (!isEmergencyGenerator(item.equip_name, item.machine_name)) {
+          queryString = `
+            CALL usp_upsert_equipment_runtime(@vessel_no, @machine_name, @equip_no, @equip_name, @runtime)`;
+          params = [
+            { name: 'vessel_no', value: item.vessel_no },
+            { name: 'machine_name', value: item.machine_name },
+            { name: 'equip_no', value: item.equip_no },
+            { name: 'equip_name', value: item.equip_name },
+            { name: 'runtime', value: item.lastest_run_hour }
+          ];
 
-        ({ text, values } = adaptNamedParams(queryString, params));
-        r = await client.query(text, values);
+          ({ text, values } = adaptNamedParams(queryString, params));
+          r = await client.query(text, values);
+        }
 
         queryString = `
         select max(work_order) as work_order
