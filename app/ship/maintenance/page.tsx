@@ -244,6 +244,31 @@ export default function MaintenanceWorkManagementPage() {
     setExpandedItems(newExpanded)
   }
 
+  // 행(row) 아무 곳이나 클릭 시: 하위 항목이 있으면 펼침/접힘, 최하위 작업이면 수정 창 열기
+  const handleRowClick = (item: Maintenance) => {
+    if (item.children && item.children.length > 0) {
+      toggleExpanded(item.key || '')
+      return
+    }
+
+    if (item.type === "TASK") {
+      handleEditMaintenanceDialogOpen(item)
+    }
+  }
+
+  // 칸 밖으로 넘치는 긴 명칭은 잘라서 표시하고, 마우스 오버 시 툴팁으로 전체 이름을 보여줍니다.
+  const getEquipmentLabel = (equipNo?: string) => {
+    if (!equipNo) return ''
+    return equipments.find((eq) => eq.equip_no === equipNo)?.equip_name || equipNo
+  }
+
+  const getSectionLabel = (sectionCode?: string) => {
+    if (!sectionCode) return ''
+    const section = selectedSections?.find((s) => s.section_code === sectionCode)
+    if (!section) return sectionCode
+    return `${section.equip_no}-${section.section_code} ${section.section_name}`
+  }
+
   const getCycleText = (interval?: number, intervalTerm?: string) => {
     if (!interval || !intervalTerm) return ""
 
@@ -388,17 +413,19 @@ export default function MaintenanceWorkManagementPage() {
     return items.map((item) => (
       <div key={item.key} className={`${level > 0 ? "ml-6" : ""}`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
-          <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
+          <div
+            className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50"
+            style={{cursor: 'pointer'}}
+            onClick={() => handleRowClick(item)}
+          >
             {item.children && item.children.length > 0 && (
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-0 h-auto" style={{cursor: 'pointer'}}>
-                  {expandedItems.has(item.key || '') ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
+              <span className="flex items-center justify-center w-6 h-6 text-gray-600">
+                {expandedItems.has(item.key || '') ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </span>
             )}
 
             <div className="flex-1 flex items-center justify-between">
@@ -436,10 +463,10 @@ export default function MaintenanceWorkManagementPage() {
                   {item.due_date && (
                     <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                   )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleEditSectionDialogOpen(item)} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleEditSectionDialogOpen(item); }}
                     style={{cursor: 'pointer'}}
                   >
                     <Edit className="w-4 h-4" />
@@ -451,10 +478,10 @@ export default function MaintenanceWorkManagementPage() {
                   {item.due_date && (
                     <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                   )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleEditMaintenanceDialogOpen(item)} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleEditMaintenanceDialogOpen(item); }}
                     style={{cursor: 'pointer'}}
                   >
                     <Edit className="w-4 h-4" />
@@ -1043,7 +1070,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {/* 섹션 수정 다이얼로그 */}
           <Dialog open={isEditSectionDialogOpen} onOpenChange={setIsEditSectionDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl" draggable>
               <DialogHeader>
                 <DialogTitle>섹션 정보 수정</DialogTitle>
                 <DialogDescription>섹션의 정보를 수정하세요</DialogDescription>
@@ -1062,21 +1089,22 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="section_name">섹션명</Label>
-                    <Input 
-                      id="section_name" 
+                    <Input
+                      id="section_name"
                       value={selectedSection.section_name}
-                      placeholder="섹션명을 입력하세요" 
+                      title={selectedSection.section_name || ''}
+                      placeholder="섹션명을 입력하세요"
                       onChange={(e) => setSelectedSection((prev: any) => ({ ...prev, section_name: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="equip_no">장비</Label>
-                    <Select 
-                      value={selectedSection.equip_no} 
+                    <Select
+                      value={selectedSection.equip_no}
                       onValueChange={(value) => setSelectedSection((prev: any) => ({ ...prev, equip_no: value }))}
                       disabled
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full" title={getEquipmentLabel(selectedSection.equip_no)}>
                         <SelectValue placeholder="장비 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1298,10 +1326,10 @@ export default function MaintenanceWorkManagementPage() {
 
           {/* 정비 수정 다이얼로그 */}
           <Dialog open={isEditMaintenanceDialogOpen} onOpenChange={setIsEditMaintenanceDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl" draggable>
               <DialogHeader>
-                <DialogTitle>섹션 정보 수정</DialogTitle>
-                <DialogDescription>섹션의 정보를 수정하세요</DialogDescription>
+                <DialogTitle>유지보수 작업</DialogTitle>
+                <DialogDescription>유지보수 작업 정보를 수정하세요</DialogDescription>
               </DialogHeader>
               {selectedMaintenance && (
                 <div className="grid grid-cols-2 gap-4 py-4">
@@ -1317,21 +1345,23 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="plan_name">작업명</Label>
-                    <Input 
-                      id="plan_name" 
+                    <Input
+                      id="plan_name"
                       value={selectedMaintenance.plan_name}
-                      placeholder="작업명을 입력하세요" 
+                      title={selectedMaintenance.plan_name || ''}
+                      placeholder="작업명을 입력하세요"
                       onChange={(e) => setSelectedMaintenance((prev: any) => ({ ...prev, plan_name: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="equip_no">장비</Label>
-                    <Select 
+                    <Select
                       value={selectedMaintenance.equip_no}
                       onValueChange={(value) => setSelectedMaintenance((prev: any) => ({ ...prev, equip_no: value }))}
                       disabled
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full" title={getEquipmentLabel(selectedMaintenance.equip_no)}>
                         <SelectValue placeholder="장비 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1343,12 +1373,12 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="section_code">섹션</Label>
-                    <Select 
+                    <Select
                       value={selectedMaintenance.section_code}
                       onValueChange={(value) => setSelectedMaintenance((prev: any) => ({ ...prev, section_code: value }))}
                       disabled
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full" title={getSectionLabel(selectedMaintenance.section_code)}>
                         <SelectValue placeholder="섹션 선택" />
                       </SelectTrigger>
                       <SelectContent>

@@ -50,10 +50,79 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  draggable = false,
+  style,
+  onPointerDown,
+  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** 헤더를 마우스로 잡아 창 위치를 이동할 수 있게 합니다. */
+  draggable?: boolean
 }) {
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 })
+  const dragRef = React.useRef<{
+    pointerX: number
+    pointerY: number
+    originX: number
+    originY: number
+  } | null>(null)
+
+  // DialogContent 자체는 닫혀도 언마운트되지 않고 내부 DOM 노드만 교체되므로,
+  // 창을 다시 열어 새 노드가 붙을 때 이동 위치를 초기화한다.
+  // (Radix는 렌더링마다 ref를 재부착하므로 "노드가 바뀐 경우"만 걸러내야 한다)
+  const userRef = React.useRef(ref)
+  userRef.current = ref
+  const lastNodeRef = React.useRef<HTMLDivElement | null>(null)
+  const setContentRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (node && node !== lastNodeRef.current) {
+      lastNodeRef.current = node
+      setOffset((prev) => (prev.x === 0 && prev.y === 0 ? prev : { x: 0, y: 0 }))
+    }
+
+    const r = userRef.current
+    if (typeof r === "function") r(node)
+    else if (r) (r as React.RefObject<HTMLDivElement | null>).current = node
+  }, [])
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    onPointerDown?.(e)
+
+    if (!draggable || e.button !== 0) return
+
+    const target = e.target as HTMLElement
+    // 헤더 영역을 잡았을 때만 이동, 버튼/입력 요소는 제외
+    if (!target.closest('[data-slot="dialog-header"]')) return
+    if (target.closest("button, input, textarea, select, a, [role='button']")) return
+
+    dragRef.current = {
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+      originX: offset.x,
+      originY: offset.y,
+    }
+
+    const handleMove = (ev: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag) return
+      setOffset({
+        x: drag.originX + (ev.clientX - drag.pointerX),
+        y: drag.originY + (ev.clientY - drag.pointerY),
+      })
+    }
+
+    const handleUp = () => {
+      dragRef.current = null
+      window.removeEventListener("pointermove", handleMove)
+      window.removeEventListener("pointerup", handleUp)
+    }
+
+    window.addEventListener("pointermove", handleMove)
+    window.addEventListener("pointerup", handleUp)
+
+    e.preventDefault()
+  }
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -61,8 +130,19 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          draggable && "[&_[data-slot=dialog-header]]:cursor-move",
           className
         )}
+        style={
+          draggable
+            ? {
+                ...style,
+                translate: `calc(-50% + ${offset.x}px) calc(-50% + ${offset.y}px)`,
+              }
+            : style
+        }
+        onPointerDown={handlePointerDown}
+        ref={setContentRef}
         {...props}
       >
         {children}

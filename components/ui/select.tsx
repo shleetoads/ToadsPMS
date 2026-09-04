@@ -28,16 +28,49 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  title,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: "sm" | "default"
 }) {
+  // 수정 다이얼로그 안에서 장비/섹션 등 긴 명칭은 칸에 맞게 잘려 보이므로,
+  // 마우스를 올렸을 때 전체 이름이 보이도록 선택된 항목 텍스트를 툴팁으로 붙인다.
+  // (title 을 직접 지정한 경우에는 건드리지 않는다)
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null)
+
+  React.useEffect(() => {
+    const node = triggerRef.current
+    if (!node || title !== undefined) return
+    if (!node.closest('[data-slot="dialog-content"]')) return
+
+    const sync = () => {
+      // 선택 전(placeholder 표시 중)에는 툴팁을 붙이지 않는다
+      if (node.hasAttribute("data-placeholder")) {
+        node.removeAttribute("title")
+        return
+      }
+      const label = node.querySelector('[data-slot="select-value"]')?.textContent?.trim()
+      if (label) node.setAttribute("title", label)
+      else node.removeAttribute("title")
+    }
+
+    sync()
+
+    // 선택값 텍스트는 트리거를 다시 렌더링하지 않고 채워지거나 바뀌므로 변경을 관찰한다.
+    // (title 속성 자체는 관찰 대상이 아니라 되먹임이 생기지 않는다)
+    const observer = new MutationObserver(sync)
+    observer.observe(node, { childList: true, subtree: true, characterData: true })
+    return () => observer.disconnect()
+  }, [title])
+
   return (
     <SelectPrimitive.Trigger
+      ref={triggerRef}
+      title={title}
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit max-w-full items-center justify-between gap-2 overflow-hidden rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

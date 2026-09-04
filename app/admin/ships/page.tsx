@@ -261,7 +261,7 @@ export default function ShipManagementPage() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm("석박("+ item.vessel_no +")을 삭제하시겠습니까?")) {
+    if (confirm("선박("+ item.vessel_no +")을 삭제하시겠습니까?")) {
       const res = await fetch('/api/admin/ships/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

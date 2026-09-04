@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
-    if (!runtime) {
+    if (runtime === undefined || runtime === null || Number.isNaN(Number(runtime))) {
       return NextResponse.json(
         { success: false, message: 'runtime is required' },
         { status: 400 }

@@ -41,6 +41,12 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     return Math.max(...datas.map((data) => data.lastest_runtime ?? 0))
   }
 
+  // 운전시간은 분 단위로 저장되므로 안내 문구에서는 H/M 으로 환산해 보여준다.
+  function formatRuntime(totalMinutes: number) {
+    const v = totalMinutes ?? 0
+    return `${Math.floor(v / 60)}H ${String(v % 60).padStart(2, "0")}M`
+  }
+
   function getSimpleName(name: string) {
     return name.split(" ")[0]
   }
@@ -107,9 +113,13 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     const handleInsert = async (runtime : number) => {
       if(!selectedEquipment) return
 
+      // 기존 값보다 작은 운전시간도 입력할 수 있으나, 오입력 방지를 위해 확인을 받는다.
       if(selectedEquipment.lastest_runtime > runtime){
-        alert("입력한 운전시간은 기존 운전시간보다 작을 수 없습니다.")
-        return
+        const confirmed = confirm(
+          `입력한 운전시간(${formatRuntime(runtime)})이 기존 운전시간(${formatRuntime(selectedEquipment.lastest_runtime)})보다 작습니다.\n` +
+          `정비 주기 계산에 영향을 줄 수 있습니다. 그대로 저장하시겠습니까?`
+        )
+        if (!confirmed) return
       }
 
       const insertedData = {
@@ -193,9 +203,13 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     // MAIN ENGINE은 모든 실린더가 함께 운전되어 운전시간이 동일하므로,
     // 실린더 선택 없이 하나의 값을 모든 실린더에 일괄 기입한다.
     const handleInsert = async (runtime: number) => {
+      // 기존 값보다 작은 운전시간도 입력할 수 있으나, 오입력 방지를 위해 확인을 받는다.
       if (currentMax > runtime) {
-        alert("입력한 운전시간은 기존 운전시간보다 작을 수 없습니다.")
-        return
+        const confirmed = confirm(
+          `입력한 운전시간(${formatRuntime(runtime)})이 기존 운전시간(${formatRuntime(currentMax)})보다 작습니다.\n` +
+          `정비 주기 계산에 영향을 줄 수 있습니다. 그대로 저장하시겠습니까?`
+        )
+        if (!confirmed) return
       }
 
       for (const cylinder of cylinders) {
