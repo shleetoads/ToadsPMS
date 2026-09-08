@@ -60,13 +60,17 @@ function DialogContent({
   /** 헤더를 마우스로 잡아 창 위치를 이동할 수 있게 합니다. */
   draggable?: boolean
 }) {
+  // 이동 위치는 ref 로 들고 있다가 드래그가 끝날 때만 state 에 반영한다.
+  // 마우스가 움직일 때마다 state 를 갱신하면 다이얼로그 전체가 다시 그려져 이동이 끊긴다.
   const [offset, setOffset] = React.useState({ x: 0, y: 0 })
-  const dragRef = React.useRef<{
-    pointerX: number
-    pointerY: number
-    originX: number
-    originY: number
-  } | null>(null)
+  const offsetRef = React.useRef({ x: 0, y: 0 })
+  const nodeRef = React.useRef<HTMLDivElement | null>(null)
+
+  const applyOffset = (x: number, y: number) => {
+    offsetRef.current = { x, y }
+    const node = nodeRef.current
+    if (node) node.style.translate = `calc(-50% + ${x}px) calc(-50% + ${y}px)`
+  }
 
   // DialogContent 자체는 닫혀도 언마운트되지 않고 내부 DOM 노드만 교체되므로,
   // 창을 다시 열어 새 노드가 붙을 때 이동 위치를 초기화한다.
@@ -75,8 +79,11 @@ function DialogContent({
   userRef.current = ref
   const lastNodeRef = React.useRef<HTMLDivElement | null>(null)
   const setContentRef = React.useCallback((node: HTMLDivElement | null) => {
+    nodeRef.current = node
+
     if (node && node !== lastNodeRef.current) {
       lastNodeRef.current = node
+      offsetRef.current = { x: 0, y: 0 }
       setOffset((prev) => (prev.x === 0 && prev.y === 0 ? prev : { x: 0, y: 0 }))
     }
 
@@ -95,30 +102,41 @@ function DialogContent({
     if (!target.closest('[data-slot="dialog-header"]')) return
     if (target.closest("button, input, textarea, select, a, [role='button']")) return
 
-    dragRef.current = {
-      pointerX: e.clientX,
-      pointerY: e.clientY,
-      originX: offset.x,
-      originY: offset.y,
-    }
+    const startX = e.clientX
+    const startY = e.clientY
+    const originX = offsetRef.current.x
+    const originY = offsetRef.current.y
 
+    let nextX = originX
+    let nextY = originY
+
+    // DialogContent 에는 열림/닫힘 연출용으로 duration-200 이 붙어 있는데,
+    // 이 클래스는 지속시간만 정하고 대상은 기본값(all)이라 위치 변경까지 0.2초에 걸쳐 따라온다.
+    // 드래그하는 동안에는 전환을 꺼서 마우스를 그대로 따라오게 한다.
+    const node = nodeRef.current
+    const prevTransition = node?.style.transition ?? ""
+    if (node) node.style.transition = "none"
+
+    // style 한 줄만 바꾸는 작업이라 이동할 때마다 바로 반영해도 부담이 없다.
+    // (프레임 단위로 묶으면 그만큼 반응이 늦어진다)
     const handleMove = (ev: PointerEvent) => {
-      const drag = dragRef.current
-      if (!drag) return
-      setOffset({
-        x: drag.originX + (ev.clientX - drag.pointerX),
-        y: drag.originY + (ev.clientY - drag.pointerY),
-      })
+      nextX = originX + (ev.clientX - startX)
+      nextY = originY + (ev.clientY - startY)
+      applyOffset(nextX, nextY)
     }
 
     const handleUp = () => {
-      dragRef.current = null
+      if (node) node.style.transition = prevTransition
+      // 드래그가 끝난 뒤에만 state 를 맞춰 다음 렌더링에서도 위치가 유지되게 한다.
+      setOffset({ x: nextX, y: nextY })
       window.removeEventListener("pointermove", handleMove)
       window.removeEventListener("pointerup", handleUp)
+      window.removeEventListener("pointercancel", handleUp)
     }
 
     window.addEventListener("pointermove", handleMove)
     window.addEventListener("pointerup", handleUp)
+    window.addEventListener("pointercancel", handleUp)
 
     e.preventDefault()
   }

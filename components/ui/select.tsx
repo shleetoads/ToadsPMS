@@ -5,6 +5,7 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { installFieldTooltip } from "@/components/ui/field-tooltip"
 
 function Select({
   ...props
@@ -45,19 +46,29 @@ function SelectTrigger({
 
     const sync = () => {
       // 선택 전(placeholder 표시 중)에는 툴팁을 붙이지 않는다
-      if (node.hasAttribute("data-placeholder")) {
-        node.removeAttribute("title")
-        return
+      const value = node.hasAttribute("data-placeholder")
+        ? null
+        : node.querySelector<HTMLElement>('[data-slot="select-value"]')
+
+      const label = value?.textContent?.trim()
+      // 입력칸과 마찬가지로, 값이 칸에 다 보이면 툴팁을 붙이지 않는다
+      const clipped = !!value && value.scrollWidth > value.clientWidth + 1
+
+      if (label && clipped) {
+        node.setAttribute("data-tip", label)
+        installFieldTooltip()
+      } else {
+        node.removeAttribute("data-tip")
       }
-      const label = node.querySelector('[data-slot="select-value"]')?.textContent?.trim()
-      if (label) node.setAttribute("title", label)
-      else node.removeAttribute("title")
+
+      // 비활성 상태에서도 금지 표시 커서는 쓰지 않는다.
+      node.style.cursor = node.disabled ? "default" : ""
     }
 
     sync()
 
     // 선택값 텍스트는 트리거를 다시 렌더링하지 않고 채워지거나 바뀌므로 변경을 관찰한다.
-    // (title 속성 자체는 관찰 대상이 아니라 되먹임이 생기지 않는다)
+    // (data-tip 속성 자체는 관찰 대상이 아니라 되먹임이 생기지 않는다)
     const observer = new MutationObserver(sync)
     observer.observe(node, { childList: true, subtree: true, characterData: true })
     return () => observer.disconnect()

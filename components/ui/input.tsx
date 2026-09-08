@@ -1,9 +1,10 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { installFieldTooltip } from "@/components/ui/field-tooltip"
 
 function Input({ className, type, title, ...props }: React.ComponentProps<"input">) {
-  // 수정 다이얼로그 안에서 값이 칸보다 길어 잘려 보이는 경우에만,
+  // 수정 창 안에서 값이 칸보다 길어 잘려 보이는 경우에만,
   // 마우스를 올렸을 때 전체 값이 보이도록 툴팁을 붙인다.
   // (title 을 직접 지정했거나 비밀번호 입력인 경우에는 붙이지 않는다)
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -16,14 +17,23 @@ function Input({ className, type, title, ...props }: React.ComponentProps<"input
 
     if (inDialog && title === undefined && type !== "password") {
       const overflows = node.scrollWidth > node.clientWidth + 1
-      if (overflows && node.value) node.setAttribute("title", node.value)
-      else node.removeAttribute("title")
+      if (overflows && node.value) {
+        node.setAttribute("data-tip", node.value)
+        installFieldTooltip()
+      } else {
+        node.removeAttribute("data-tip")
+      }
     }
 
     // 비활성 입력칸은 기본적으로 마우스 이벤트를 받지 않아 툴팁이 뜨지 않는다.
-    // 툴팁이 붙어 있을 때만 마우스 이벤트를 되살린다(입력은 여전히 불가).
-    if (node.disabled && node.getAttribute("title")) node.style.pointerEvents = "auto"
-    else node.style.pointerEvents = ""
+    // 툴팁이 붙어 있을 때만 마우스 이벤트를 되살리고, 금지 표시 커서는 쓰지 않는다.
+    if (node.disabled && node.hasAttribute("data-tip")) {
+      node.style.pointerEvents = "auto"
+      node.style.cursor = "default"
+    } else {
+      node.style.pointerEvents = ""
+      node.style.cursor = ""
+    }
   })
 
   return (

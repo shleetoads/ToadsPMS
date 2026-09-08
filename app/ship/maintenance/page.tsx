@@ -256,19 +256,6 @@ export default function MaintenanceWorkManagementPage() {
     }
   }
 
-  // 칸 밖으로 넘치는 긴 명칭은 잘라서 표시하고, 마우스 오버 시 툴팁으로 전체 이름을 보여줍니다.
-  const getEquipmentLabel = (equipNo?: string) => {
-    if (!equipNo) return ''
-    return equipments.find((eq) => eq.equip_no === equipNo)?.equip_name || equipNo
-  }
-
-  const getSectionLabel = (sectionCode?: string) => {
-    if (!sectionCode) return ''
-    const section = selectedSections?.find((s) => s.section_code === sectionCode)
-    if (!section) return sectionCode
-    return `${section.equip_no}-${section.section_code} ${section.section_name}`
-  }
-
   const getCycleText = (interval?: number, intervalTerm?: string) => {
     if (!interval || !intervalTerm) return ""
 
@@ -458,19 +445,9 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                 </div>
               </div>
-              {item.type === "SECTION" && (
+              {item.type === "SECTION" && item.due_date && (
                 <div className="flex items-center gap-2">
-                  {item.due_date && (
-                    <span className="text-sm text-gray-500">다음: {item.due_date}</span>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleEditSectionDialogOpen(item); }}
-                    style={{cursor: 'pointer'}}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
+                  <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                 </div>
               )}
               {item.type === "TASK" && (
@@ -1092,7 +1069,6 @@ export default function MaintenanceWorkManagementPage() {
                     <Input
                       id="section_name"
                       value={selectedSection.section_name}
-                      title={selectedSection.section_name || ''}
                       placeholder="섹션명을 입력하세요"
                       onChange={(e) => setSelectedSection((prev: any) => ({ ...prev, section_name: e.target.value }))}
                     />
@@ -1104,7 +1080,7 @@ export default function MaintenanceWorkManagementPage() {
                       onValueChange={(value) => setSelectedSection((prev: any) => ({ ...prev, equip_no: value }))}
                       disabled
                     >
-                      <SelectTrigger className="w-full" title={getEquipmentLabel(selectedSection.equip_no)}>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="장비 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1348,7 +1324,7 @@ export default function MaintenanceWorkManagementPage() {
                     <Input
                       id="plan_name"
                       value={selectedMaintenance.plan_name}
-                      title={selectedMaintenance.plan_name || ''}
+
                       placeholder="작업명을 입력하세요"
                       onChange={(e) => setSelectedMaintenance((prev: any) => ({ ...prev, plan_name: e.target.value }))}
                       disabled
@@ -1361,7 +1337,7 @@ export default function MaintenanceWorkManagementPage() {
                       onValueChange={(value) => setSelectedMaintenance((prev: any) => ({ ...prev, equip_no: value }))}
                       disabled
                     >
-                      <SelectTrigger className="w-full" title={getEquipmentLabel(selectedMaintenance.equip_no)}>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="장비 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1378,7 +1354,7 @@ export default function MaintenanceWorkManagementPage() {
                       onValueChange={(value) => setSelectedMaintenance((prev: any) => ({ ...prev, section_code: value }))}
                       disabled
                     >
-                      <SelectTrigger className="w-full" title={getSectionLabel(selectedMaintenance.section_code)}>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="섹션 선택" />
                       </SelectTrigger>
                       <SelectContent>

@@ -344,19 +344,9 @@ export default function MaintenanceWorkManagementPage() {
                   </div>
                 </div>
               </div>
-              {item.type === "SECTION" && (
+              {item.type === "SECTION" && item.due_date && (
                 <div className="flex items-center gap-2">
-                  {item.due_date && (
-                    <span className="text-sm text-gray-500">다음: {item.due_date}</span>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={(e) => { e.stopPropagation(); handleEditSectionDialogOpen(item); }} 
-                    style={{cursor: 'pointer'}}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
+                  <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                 </div>
               )}
               {item.type === "TASK" && (
@@ -1232,7 +1222,6 @@ export default function MaintenanceWorkManagementPage() {
                     <Input
                       id="plan_name"
                       value={selectedMaintenance.plan_name}
-                      title={selectedMaintenance.plan_name || ''}
                       placeholder="작업명을 입력하세요"
                       onChange={(e) => setSelectedMaintenance((prev: any) => ({ ...prev, plan_name: e.target.value }))}
                       disabled
