@@ -37,7 +37,11 @@ export type NamedParam = { name: string; value: any };
 /**
  * MSSQL의 @name 방식 파라미터를 PostgreSQL의 $N 방식으로 변환.
  * SQL에서 @paramName이 등장하는 순서대로 $1, $2, ... 로 치환.
- * 동일 이름 재등장 시 동일 $N 을 재사용한다.
+ *
+ * 동일 이름이 재등장해도 매번 새 $N 을 부여하고 값을 반복해 넣는다.
+ * 이유: 같은 $N 을 INSERT 값 자리(varchar 컬럼)와 비교식(where col = $N, text로 추론)에
+ * 함께 쓰면 PostgreSQL이 "inconsistent types deduced for parameter $N" 으로 거부한다.
+ * 등장마다 별도 $N 이면 각 자리에서 독립적으로 타입이 추론되어 충돌이 없다.
  *
  * 반환은 { text, values } — pg 드라이버 `client.query(text, values)` 호출부에 그대로 전달 가능.
  */
@@ -45,12 +49,11 @@ export function adaptNamedParams(
   sql: string,
   params: NamedParam[]
 ): { text: string; values: any[] } {
-  const seen: string[] = [];
+  const values: any[] = [];
   const text = sql.replace(/@(\w+)/g, (_, name) => {
-    if (!seen.includes(name)) seen.push(name);
-    return `$${seen.indexOf(name) + 1}`;
+    values.push(params.find(p => p.name === name)?.value);
+    return `$${values.length}`;
   });
-  const values = seen.map(name => params.find(p => p.name === name)?.value);
   return { text, values };
 }
 
