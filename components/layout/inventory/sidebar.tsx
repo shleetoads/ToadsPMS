@@ -52,7 +52,8 @@ export function Sidebar({ userType }: SidebarProps) {
             <h1 className="text-xl font-bold text-gray-900">재고 관리</h1>
             <p className="text-sm text-gray-600">부품 재고 통합 관리</p>
           </div>
-          <nav className="p-4 space-y-2">
+          {/* sticky top-0: 페이지를 내려도 메뉴가 화면 상단에 붙어 따라온다 (배경은 부모가 본문 높이만큼 유지) */}
+          <nav className="p-4 space-y-2 sticky top-0">
             {menuItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href

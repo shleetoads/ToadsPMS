@@ -52,7 +52,8 @@ export function Sidebar({ userType }: SidebarProps) {
     <div className="flex self-stretch min-h-[calc(100vh-73px)]">
       <aside className="w-64 bg-gray-50 border-r border-gray-200 flex-shrink-0 flex">
         <div className="w-64 bg-white shadow-sm border-r flex-1">
-          <nav className="p-4 space-y-2">
+          {/* sticky top-0: 페이지를 내려도 메뉴가 화면 상단에 붙어 따라온다 (배경은 부모가 본문 높이만큼 유지) */}
+          <nav className="p-4 space-y-2 sticky top-0">
             {menuItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
