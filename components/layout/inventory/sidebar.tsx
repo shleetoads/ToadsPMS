@@ -42,10 +42,12 @@ export function Sidebar({ userType }: SidebarProps) {
 
   const menuItems = userType === "ADMIN" ? adminMenuItems : userType === "USER" ? userMenuItems : vesselMenuItems
 
+  // 부모 flex 행에 맞춰 늘어남(self-stretch): 본문이 길어 스크롤이 생기면 사이드바도 같이 늘어난다.
+  // 본문이 짧을 때는 최소 (화면 높이 - 헤더 높이 약 73px) 를 유지.
   return (
-    <div className="flex h-screen">
-      <aside className="w-64 bg-gray-50 border-r border-gray-200 h-full flex-shrink-0">
-        <div className="w-64 bg-white shadow-sm border-r h-full">
+    <div className="flex self-stretch min-h-[calc(100vh-73px)]">
+      <aside className="w-64 bg-gray-50 border-r border-gray-200 flex-shrink-0 flex">
+        <div className="w-64 bg-white shadow-sm border-r flex-1">
           <div className="p-6">
             <h1 className="text-xl font-bold text-gray-900">재고 관리</h1>
             <p className="text-sm text-gray-600">부품 재고 통합 관리</p>
