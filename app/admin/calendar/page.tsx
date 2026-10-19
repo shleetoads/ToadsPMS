@@ -236,8 +236,10 @@ export default function AdminCalendarPage() {
     "December",
   ]
 
+  // 최상위 overflow-hidden 제거: overflow 가 있으면 사이드바 sticky 가 window 스크롤에 반응하지 않음.
+  // 간트 영역은 내부(scrollable-data-section)에서 자체 스크롤하므로 최상위 제한 불필요.
   return (
-    <div className="min-h-screen bg-gray-50 overflow-hidden">
+    <div className="min-h-screen bg-gray-50">
       <Header userType={userInfo.user_auth} />
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
