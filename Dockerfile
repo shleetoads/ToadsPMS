@@ -7,7 +7,9 @@
 # PROJECT build-arg는 이미지 메타데이터 용도이며 현재 빌드 산출은 공통이다.
 
 # ─── Stage 1: builder ────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# CVE-2026-111497 (Node2Shell, Brotli decoder OOB write) 패치.
+# Node 20은 EOL(2026-04-30)이라 수정 릴리스가 없어 24.22.1로 업그레이드.
+FROM node:24.22.1-alpine AS builder
 WORKDIR /app
 
 ARG PROJECT
@@ -26,7 +28,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ─── Stage 2: runner ─────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 
 ARG PROJECT
