@@ -95,8 +95,8 @@ export default function ShipInventoryStatusPage() {
               </div>
             </div>
 
-            <div className="flex gap-6 h-[calc(100vh-200px)]">
-              <Card className="w-80 flex-shrink-0">
+            <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-200px)]">
+              <Card className="w-full lg:w-80 shrink-0 max-h-[40vh] lg:max-h-none overflow-y-auto">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="w-5 h-5" />
@@ -124,9 +124,9 @@ export default function ShipInventoryStatusPage() {
                 </CardContent>
               </Card>
 
-              <Card className="flex-1">
+              <Card className="flex-1 min-w-0">
                 <CardHeader>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center flex-wrap gap-2">
                     <CardTitle className="flex items-center gap-2">
                       <Package className="w-5 h-5" />
                       {selectedMachineData?.machine_name} 부품 목록
@@ -138,7 +138,7 @@ export default function ShipInventoryStatusPage() {
                           placeholder="부품명 또는 부품코드로 검색..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 w-64"
+                          className="pl-10 w-full sm:w-64"
                         />
                       </div>
                     </div>

@@ -492,9 +492,9 @@ export default function MaintenanceWorkManagementPage() {
               <CardTitle className="text-lg">필터 및 검색</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row flex-wrap gap-4">
                 <Select value={shipFilter} onValueChange={setShipFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -505,7 +505,7 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectContent>
                 </Select>
                 <Select value={machineFilter} onValueChange={setMachineFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -516,7 +516,7 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectContent>
                 </Select>
                 <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -526,7 +526,7 @@ export default function MaintenanceWorkManagementPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input

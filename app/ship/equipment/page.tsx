@@ -285,11 +285,11 @@ export default function ShipEquipmentPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 장비 수</CardTitle>
-                <Settings className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 장비 수</CardTitle>
+                <Settings className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{equipments.length}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{equipments.length}</div>
                 <p className="text-xs text-muted-foreground">등록된 장비</p>
               </CardContent>
             </Card>
@@ -334,19 +334,19 @@ export default function ShipEquipmentPage() {
             {filteredEquipment.map((item) => (
               <Card key={item.equip_no} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Settings className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{item.machine_name}</CardTitle>
-                        <CardDescription>
+                      <div className="min-w-0">
+                        <CardTitle className="text-xl truncate">{item.machine_name}</CardTitle>
+                        <CardDescription className="truncate">
                           {item.equip_no} • {item.equip_name}
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button 
                         variant="ghost" 
                         size="sm" 

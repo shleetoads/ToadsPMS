@@ -334,11 +334,11 @@ export default function InventoryTransactionsPage() {
                           <Filter className="w-4 h-4" />
                           <span className="text-sm font-medium">테이블 필터</span>
                         </div>
-                        <div className="flex flex-row gap-3">
+                        <div className="flex flex-wrap gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">구분</Label>
                             <Select value={typeFilter} onValueChange={setTypeFilter}>
-                              <SelectTrigger className="h-8 w-38">
+                              <SelectTrigger className="h-8 w-full sm:w-40">
                                 <SelectValue placeholder="전체" />
                               </SelectTrigger>
                               <SelectContent>
@@ -357,7 +357,7 @@ export default function InventoryTransactionsPage() {
                               placeholder="장비명 검색"
                               value={machineFilter}
                               onChange={(e) => setMachineFilter(e.target.value)}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                           <div className="space-y-1">
@@ -366,7 +366,7 @@ export default function InventoryTransactionsPage() {
                               placeholder="부품명/코드 검색"
                               value={materialFilter}
                               onChange={(e) => setMaterialFilter(e.target.value)}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                           <div className="space-y-1">
@@ -375,7 +375,7 @@ export default function InventoryTransactionsPage() {
                               placeholder="창고명 검색"
                               value={warehouseFilter}
                               onChange={(e) => setWarehouseFilter(e.target.value)}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                         </div>

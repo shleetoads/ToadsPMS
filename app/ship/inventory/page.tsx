@@ -168,17 +168,17 @@ export default function ShipInventoryPage() {
                           <Card key={machine.machine_name} className="border border-red-200">
                             <CardContent className="p-4">
                               <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <h5 className="font-medium text-gray-900">{machine.machine_name}</h5>
-                                  <Badge variant="destructive" className="text-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h5 className="font-medium text-gray-900 truncate min-w-0">{machine.machine_name}</h5>
+                                  <Badge variant="destructive" className="text-xs shrink-0">
                                     {machine.children.length}개 부족
                                   </Badge>
                                 </div>
                                 <div className="space-y-1">
                                   {machine.children.map((material) => (
-                                    <div key={material.material_code} className="flex justify-between items-center text-sm">
-                                      <span className="text-gray-700">{material.material_name}</span>
-                                      <span className="text-red-600 font-medium">
+                                    <div key={material.material_code} className="flex justify-between items-center text-sm gap-2">
+                                      <span className="text-gray-700 truncate min-w-0">{material.material_name}</span>
+                                      <span className="text-red-600 font-medium shrink-0 tabular-nums">
                                         {material.stock_qty}/{material.standard_qty} {material.material_unit}
                                       </span>
                                     </div>

@@ -249,29 +249,29 @@ export default function ShipTaskListPage() {
               <div className="space-y-4">
                 {filteredTasks.map((task) => (
                   <div key={task.id} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-3">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         {getStatusIcon(task.status)}
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900">{task.taskName}</h3>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 truncate">{task.taskName}</h3>
                             {task.critical && getCriticalBadge(task.critical)}
                           </div>
-                          <p className="text-sm text-gray-600">{task.taskCode}</p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Wrench className="w-3 h-3" />
+                          <p className="text-sm text-gray-600 truncate">{task.taskCode}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1 shrink-0">
+                              <Wrench className="w-3 h-3 shrink-0" />
                               {task.equipment}
                             </span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
+                            <span className="flex items-center gap-1 shrink-0">
+                              <User className="w-3 h-3 shrink-0" />
                               {task.assignee}
                             </span>
-                            <span>{task.estimatedHours}시간</span>
+                            <span className="shrink-0">{task.estimatedHours}시간</span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         {getStatusBadge(task.status)}
                         <p className="text-sm text-gray-500 mt-1">
                           {task.status === "완료" ? `완료일: ${task.completedDate}` : `예정일: ${task.dueDate}`}

@@ -231,7 +231,7 @@ export default function ShipWarehouseManagementPage() {
 
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <CardTitle className="flex items-center gap-2">
                     <WarehouseIcon className="w-5 h-5" />
                     창고 목록
@@ -242,7 +242,7 @@ export default function ShipWarehouseManagementPage() {
                       placeholder="창고코드, 창고명, 위치로 검색..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-64"
+                      className="pl-10 w-full sm:w-64"
                     />
                   </div>
                 </div>

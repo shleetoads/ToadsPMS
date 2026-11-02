@@ -81,24 +81,24 @@ export default function ShortagePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="transition-shadow border-red-200 bg-red-50">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
                         <p className="text-sm text-gray-600">총 부족 부품</p>
-                        <p className="text-2xl font-bold text-red-600">{filteredData.length}개</p>
+                        <p className="text-2xl font-bold text-red-600 tabular-nums truncate">{filteredData.length}개</p>
                       </div>
-                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                      <AlertTriangle className="w-8 h-8 text-red-500 shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="transition-shadow border-red-200 bg-red-50">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
                         <p className="text-sm text-gray-600">총 부족 수량</p>
-                        <p className="text-2xl font-bold text-orange-600">{totalShortage}개</p>
+                        <p className="text-2xl font-bold text-orange-600 tabular-nums truncate">{totalShortage}개</p>
                       </div>
-                      <Package className="w-8 h-8 text-orange-500" />
+                      <Package className="w-8 h-8 text-orange-500 shrink-0" />
                     </div>
                   </CardContent>
                 </Card>

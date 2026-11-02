@@ -432,10 +432,10 @@ export default function MaintenanceExecutionPage() {
     return items.map((item) => (
       <div key={`${item.equip_no}-${item.section_code}`} className="border rounded-lg p-4 space-y-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 min-w-0">
                   <Checkbox
                     id="select-all"
                     checked={
@@ -444,7 +444,7 @@ export default function MaintenanceExecutionPage() {
                     }
                     onCheckedChange={() => handleSelectAll(item.equip_no, item.section_code || '')}
                   />
-                  <h4 className="font-semibold">{item.section_name}</h4>
+                  <h4 className="font-semibold truncate">{item.section_name}</h4>
                   <span className="text-sm text-gray-500">({item.section_code})</span>
                 </div>
               </div>
@@ -462,7 +462,7 @@ export default function MaintenanceExecutionPage() {
     return items.map((item) => (
       <div key={`${item.equip_no}-${item.section_code}-${item.plan_code}`} className="border rounded-lg p-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
             <Checkbox
               id={`${item.equip_no}-${item.section_code}-${item.plan_code}`}
               checked={selectedWorks.includes(`${item.equip_no}-${item.section_code}-${item.plan_code}`)}
@@ -470,11 +470,11 @@ export default function MaintenanceExecutionPage() {
               disabled={item.status === "COMPLETE"}
               className="mt-1"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               {getStatusIcon(item.status)}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold">{item.plan_name}</h4>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 min-w-0">
+                  <h4 className="font-semibold truncate">{item.plan_name}</h4>
                   <span className="text-sm text-gray-500">({item.plan_code})</span>
                   <ExecutionItemBagde status={item.status ?? null} critical={item.critical ?? null} />
                 </div>
@@ -499,12 +499,12 @@ export default function MaintenanceExecutionPage() {
             </div>
           </div>
           {item.status !== "COMPLETE" && item.status === "DELAYED" && (
-            <Button onClick={() => handleExtension(item)} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
+            <Button onClick={() => handleExtension(item)} size="sm" className="ml-4 shrink-0" style={{cursor: 'pointer'}}>
               연장 신청
             </Button>
           )}
           {item.status !== "COMPLETE" && (
-            <Button onClick={() => handleExecuteTask(item)} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
+            <Button onClick={() => handleExecuteTask(item)} size="sm" className="ml-4 shrink-0" style={{cursor: 'pointer'}}>
               개별 실행
             </Button>
           )}
@@ -985,9 +985,9 @@ export default function MaintenanceExecutionPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row flex-wrap gap-4">
                 <Select value={machineFilter} onValueChange={handleMachineFilterChange}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -998,7 +998,7 @@ export default function MaintenanceExecutionPage() {
                   </SelectContent>
                 </Select>
                 <Select value={equipmentFilter} onValueChange={handleEquipmentFilterChange}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1009,7 +1009,7 @@ export default function MaintenanceExecutionPage() {
                   </SelectContent>
                 </Select>
                 <Select value={sectionFilter} onValueChange={setSectionFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1020,7 +1020,7 @@ export default function MaintenanceExecutionPage() {
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1033,7 +1033,7 @@ export default function MaintenanceExecutionPage() {
                     <SelectItem value="COMPLETE">완료</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
@@ -1054,19 +1054,19 @@ export default function MaintenanceExecutionPage() {
             {filteredWorks.map((eq) => (
               <Card key={eq.equip_no}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Settings className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{eq.machine_name}</CardTitle>
-                        <p className="text-gray-600">{eq.equip_name}</p>
+                      <div className="min-w-0">
+                        <CardTitle className="text-xl truncate">{eq.machine_name}</CardTitle>
+                        <p className="text-gray-600 truncate">{eq.equip_name}</p>
                       </div>
                     </div>
                     {selectedWorks.length > 0 && (
                       selectedWorks.filter(selected => selected.startsWith(eq.equip_no)).length > 0 && (
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 shrink-0">
                         <span className="text-sm text-gray-600">{selectedWorks.filter(selected => selected.includes(eq.equip_no)).length}개 작업 선택됨</span>
                         <Button onClick={() => handleBulkExecution(eq.equip_no, eq.equip_name)} className="bg-blue-600 hover:bg-blue-700" style={{cursor: 'pointer'}}>
                           <Plus className="w-4 h-4 mr-2" />

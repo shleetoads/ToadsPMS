@@ -183,34 +183,34 @@ export default function ShipInventoryShortagePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-600">총 부족 부품</p>
-                      <p className="text-2xl font-bold text-red-600">{totalShortage}</p>
+                      <p className="text-2xl font-bold text-red-600 tabular-nums truncate">{totalShortage}</p>
                     </div>
-                    <AlertTriangle className="w-8 h-8 text-red-500" />
+                    <AlertTriangle className="w-8 h-8 text-red-500 shrink-0" />
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-600">높은 우선순위</p>
-                      <p className="text-2xl font-bold text-orange-600">{highPriorityCount}</p>
+                      <p className="text-2xl font-bold text-orange-600 tabular-nums truncate">{highPriorityCount}</p>
                     </div>
-                    <Package className="w-8 h-8 text-orange-500" />
+                    <Package className="w-8 h-8 text-orange-500 shrink-0" />
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-600">예상 구매 비용</p>
-                      <p className="text-2xl font-bold text-blue-600">₩{totalEstimatedCost.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-blue-600 tabular-nums truncate">₩{totalEstimatedCost.toLocaleString()}</p>
                     </div>
-                    <TrendingUp className="w-8 h-8 text-blue-500" />
+                    <TrendingUp className="w-8 h-8 text-blue-500 shrink-0" />
                   </div>
                 </CardContent>
               </Card>

@@ -314,17 +314,17 @@ export default function MaintenanceWorkManagementPage() {
               </span>
             )}
 
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
                   {item.type === "EQUIPMENT" ? (
-                    <FolderTree className="w-5 h-5 text-blue-600" />
+                    <FolderTree className="w-5 h-5 text-blue-600 shrink-0" />
                   ) : (
-                    <Wrench className="w-5 h-5 text-orange-600" />
+                    <Wrench className="w-5 h-5 text-orange-600 shrink-0" />
                   )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{`${item.name}`}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium truncate min-w-0">{`${item.name}`}</span>
                       <span className="text-sm text-gray-500">({item.id})</span>
                       {item.type === "TASK" && (
                         item.critical && getCriticalBadge(item.critical)
@@ -345,12 +345,12 @@ export default function MaintenanceWorkManagementPage() {
                 </div>
               </div>
               {item.type === "SECTION" && item.due_date && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                 </div>
               )}
               {item.type === "TASK" && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {item.due_date && (
                     <span className="text-sm text-gray-500">다음: {item.due_date}</span>
                   )}
@@ -832,7 +832,7 @@ export default function MaintenanceWorkManagementPage() {
                       <Plus className="w-4 h-4 mr-2" />새 작업 추가
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-w-[50vw]">
+                  <DialogContent className="max-w-4xl w-[90vw]">
                     <DialogHeader>
                       <DialogTitle>새 유지보수 작업 추가</DialogTitle>
                       <DialogDescription>새로운 유지보수 작업을 추가하세요</DialogDescription>
@@ -1019,31 +1019,31 @@ export default function MaintenanceWorkManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 장비 수</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 장비 수</CardTitle>
+                <Wrench className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{equipmentCount}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{equipmentCount}</div>
                 <p className="text-xs text-muted-foreground">등록된 장비</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 섹션 수</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 섹션 수</CardTitle>
+                <Wrench className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{sectionCount}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{sectionCount}</div>
                 <p className="text-xs text-muted-foreground">등록된 섹션</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 작업 수</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 작업 수</CardTitle>
+                <Wrench className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{maintenanceCount}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{maintenanceCount}</div>
                 <p className="text-xs text-muted-foreground">등록된 작업</p>
               </CardContent>
             </Card>
@@ -1055,9 +1055,9 @@ export default function MaintenanceWorkManagementPage() {
               <CardTitle className="text-lg">필터 및 검색</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row flex-wrap gap-4">
                 <Select value={machineFilter} onValueChange={setMachineFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1068,7 +1068,7 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectContent>
                 </Select>
                 <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1079,7 +1079,7 @@ export default function MaintenanceWorkManagementPage() {
                   </SelectContent>
                 </Select>
                 <Select value={sectionFilter} onValueChange={setSectionFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1089,7 +1089,7 @@ export default function MaintenanceWorkManagementPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input

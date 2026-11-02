@@ -353,11 +353,11 @@ export default function InventoryTransactionsPage() {
                           <Filter className="w-4 h-4" />
                           <span className="text-sm font-medium">테이블 필터</span>
                         </div>
-                        <div className="flex flex-row gap-3">
+                        <div className="flex flex-wrap gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">구분</Label>
                             <Select value={typeFilter} onValueChange={setTypeFilter}>
-                              <SelectTrigger className="h-8 w-38">
+                              <SelectTrigger className="h-8 w-full sm:w-40">
                                 <SelectValue placeholder="전체" />
                               </SelectTrigger>
                               <SelectContent>
@@ -377,7 +377,7 @@ export default function InventoryTransactionsPage() {
                               value={machineFilter}
                               onChange={(e) => setMachineFilter(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' ? setMachineTerm(machineFilter) : ""}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                           <div className="space-y-1">
@@ -387,7 +387,7 @@ export default function InventoryTransactionsPage() {
                               value={materialFilter}
                               onChange={(e) => setMaterialFilter(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' ? setMaterialTerm(materialFilter) : ""}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                           <div className="space-y-1">
@@ -397,7 +397,7 @@ export default function InventoryTransactionsPage() {
                               value={warehouseFilter}
                               onChange={(e) => setWarehouseFilter(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' ? setWarehouseTerm(warehouseFilter) : ""}
-                              className="h-8"
+                              className="h-8 w-full sm:w-40"
                             />
                           </div>
                         </div>

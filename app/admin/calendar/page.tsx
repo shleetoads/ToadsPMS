@@ -418,8 +418,8 @@ export default function AdminCalendarPage() {
                             <CardContent>
                               <div className="space-y-4">
                                 <div>
-                                  <div className="flex items-center gap-3 text-xl">
-                                    <h3 className="font-medium text-lg">{task.plan_name}</h3>
+                                  <div className="flex flex-wrap items-center gap-3 text-xl">
+                                    <h3 className="font-medium text-lg truncate min-w-0">{task.plan_name}</h3>
                                     <div className="flex items-center gap-2 mt-2 text-sm">
                                       <span className="text-gray-500">({`${task.equip_no}-${task.section_code}-${task.plan_code}`})</span>
                                     </div>
@@ -433,27 +433,27 @@ export default function AdminCalendarPage() {
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-5 gap-4 text-sm">
-                                  <div className="flex gap-2">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2 text-sm">
+                                  <div className="flex gap-2 min-w-0">
                                     <span className="text-gray-600">담당자</span>
-                                    <div className="font-medium">{task.manager}</div>
+                                    <div className="font-medium truncate">{task.manager}</div>
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 min-w-0">
                                     <span className="text-gray-600">작업 위치</span>
-                                    <div className="font-medium capitalize">{task.location}</div>
+                                    <div className="font-medium capitalize truncate">{task.location}</div>
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 min-w-0">
                                     <span className="text-gray-600">최근 정비</span>
-                                    <div className="font-medium">{task.lastest_date}</div>
+                                    <div className="font-medium truncate">{task.lastest_date}</div>
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 min-w-0">
                                     <span className="text-gray-600">예정일</span>
-                                    <div className="font-medium">{task.due_date}</div>
+                                    <div className="font-medium truncate">{task.due_date}</div>
                                   </div>
                                   {task.extension_date && (
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 min-w-0">
                                     <span className="text-gray-600">연장일</span>
-                                    <div className="font-medium">{task.extension_date}</div>
+                                    <div className="font-medium truncate">{task.extension_date}</div>
                                   </div>
                                   )}
                                 </div>

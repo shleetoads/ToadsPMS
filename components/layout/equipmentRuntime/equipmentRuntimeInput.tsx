@@ -33,11 +33,11 @@ export default function EquipmentRuntimeInput({
         {equip_name} ({machine_name}) 운전 시간
       </p>
 
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-2 flex-wrap">
 
         {/* HOURS */}
         <input
-          className="w-60 h-12 text-center border rounded"
+          className="w-24 min-w-0 h-12 text-center border rounded"
           type="number"
           value={hour}
           onChange={(e) => {

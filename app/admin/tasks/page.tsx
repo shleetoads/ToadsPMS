@@ -209,25 +209,25 @@ export default function TaskListPage() {
               <div className="space-y-4">
                 {filteredTasks.map((task) => (
                   <div key={`${task.equip_no}-${task.section_code}-${task.plan_code}`} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-3">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         {getStatusIcon(task.status)}
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900">{`${task.plan_code} - ${task.plan_name}`}</h3>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 truncate">{`${task.plan_code} - ${task.plan_name}`}</h3>
                             {task.critical && getCriticalBadge(task.critical)}
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Ship className="w-3 h-3" />
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1 shrink-0">
+                              <Ship className="w-3 h-3 shrink-0" />
                               {task.vessel_name}
                             </span>
-                            <span>담당자: {task.manager}</span>
-                            <span>장비: {task.equip_name}</span>
+                            <span className="truncate">담당자: {task.manager}</span>
+                            <span className="truncate">장비: {task.equip_name}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         {getStatusBadge(task.status)}
                         <p className="text-sm text-gray-500 mt-1">예정일: {task.due_date}</p>
                         <p className="text-xs text-gray-400">최근 정비: {task.lastest_date}</p>

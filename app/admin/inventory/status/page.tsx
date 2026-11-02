@@ -368,19 +368,19 @@ export default function InventoryStatusPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Card
                   className="cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50"
                   onClick={handleShortageClick}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
                         <p className="text-sm text-red-600 font-medium">부족 부품</p>
-                        <p className="text-2xl font-bold text-red-700">{shortageCount}개</p>
+                        <p className="text-2xl font-bold text-red-700 tabular-nums truncate">{shortageCount}개</p>
                         <p className="text-xs text-red-500">최소 보유 수량 미달</p>
                       </div>
-                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                      <AlertTriangle className="w-8 h-8 text-red-500 shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
@@ -390,13 +390,13 @@ export default function InventoryStatusPage() {
                   onClick={handleLossClick}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
                         <p className="text-sm text-orange-600 font-medium">손망실 부품</p>
-                        <p className="text-2xl font-bold text-orange-700">{lossCount}건</p>
+                        <p className="text-2xl font-bold text-orange-700 tabular-nums truncate">{lossCount}건</p>
                         <p className="text-xs text-orange-500">최근 손망실 발생</p>
                       </div>
-                      <AlertTriangle className="w-8 h-8 text-orange-500" />
+                      <AlertTriangle className="w-8 h-8 text-orange-500 shrink-0" />
                     </div>
                   </CardContent>
                 </Card>

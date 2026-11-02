@@ -326,7 +326,7 @@ export default function PartsReceivingPage() {
                                 type="number"
                                 placeholder="수량"
                                 value={material.receive_qty}
-                                className="w-30"
+                                className="w-full sm:w-32"
                                 onChange={(e) => updateReceivingMaterial(index, "receive_qty", e.target.value)}
                               />
                             </div>
