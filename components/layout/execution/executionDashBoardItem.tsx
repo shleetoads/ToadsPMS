@@ -45,7 +45,7 @@ export default function ExecutionDashBoardItem({ status, count, handleOnClick }:
   }
 
   const getStatusIcon = () => {
-    const base = "h-4 w-4"
+    const base = "h-4 w-4 shrink-0"
     let color = ""
 
     if(status == "ALL") //All Icon -> BLUE...
@@ -64,7 +64,7 @@ export default function ExecutionDashBoardItem({ status, count, handleOnClick }:
   }
 
   const getContentsTextStyle = () => {
-    const base = "text-2xl font-bold"
+    const base = "text-2xl font-bold tabular-nums truncate"
     return `${base} ${colorMap[status ?? ""] ?? "text-gray-600"}`
   }
   return(
@@ -73,7 +73,7 @@ export default function ExecutionDashBoardItem({ status, count, handleOnClick }:
       onClick={() => handleOnClick(status)}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{titleMap[status?? ""]}</CardTitle>
+        <CardTitle className="text-sm font-medium truncate min-w-0">{titleMap[status?? ""]}</CardTitle>
         {getStatusIcon()}
       </CardHeader>
       <CardContent>

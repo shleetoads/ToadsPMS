@@ -64,44 +64,44 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 선박 수</CardTitle>
-                <Ship className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 선박 수</CardTitle>
+                <Ship className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalShips}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{totalShips}</div>
                 <p className="text-xs text-muted-foreground">활성 선박</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">지연된 작업</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">지연된 작업</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{totalDelayedTasks}</div>
+                <div className="text-2xl font-bold text-red-600 tabular-nums truncate">{totalDelayedTasks}</div>
                 <p className="text-xs text-muted-foreground">즉시 조치 필요</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">금주 예정 작업</CardTitle>
-                <Calendar className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">금주 예정 작업</CardTitle>
+                <Calendar className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{totalWeeklyTasks}</div>
+                <div className="text-2xl font-bold text-blue-600 tabular-nums truncate">{totalWeeklyTasks}</div>
                 <p className="text-xs text-muted-foreground">이번 주 예정</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">금월 완료 작업</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">금월 완료 작업</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{totalCompletedTasks}</div>
+                <div className="text-2xl font-bold text-green-600 tabular-nums truncate">{totalCompletedTasks}</div>
                 <p className="text-xs text-muted-foreground">이번 달 완료</p>
               </CardContent>
             </Card>
@@ -120,75 +120,75 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 {vesselItems.map((vessel) => (
                   <div key={vessel.vessel_no} className="border rounded-lg p-4 bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                           <Ship className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{vessel.vessel_name}</h3>
-                          <p className="text-sm text-gray-500">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate">{vessel.vessel_name}</h3>
+                          <p className="text-sm text-gray-500 truncate">
                             {vessel.vessel_no}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 items-stretch">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-stretch">
                       <Button
                         variant="outline"
-                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent"
+                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent min-w-0 whitespace-normal text-center"
                         onClick={() => handleTaskClick("DELAYED", vessel.vessel_no, vessel.vessel_name)}
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-red-600" />
-                          <span className="text-lg font-bold text-red-600">{vessel.delayed_tasks}</span>
+                          <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
+                          <span className="text-lg font-bold text-red-600 tabular-nums">{vessel.delayed_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">지연된 작업</span>
                       </Button>
 
                       <Button
                         variant="outline"
-                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent"
+                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent min-w-0 whitespace-normal text-center"
                         onClick={() => handleTaskClick("weekly", vessel.vessel_no, vessel.vessel_name)}
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-blue-600" />
-                          <span className="text-lg font-bold text-blue-600">{vessel.weekly_tasks}</span>
+                          <Calendar className="h-4 w-4 text-blue-600 shrink-0" />
+                          <span className="text-lg font-bold text-blue-600 tabular-nums">{vessel.weekly_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">금주 예정</span>
                       </Button>
 
                       <Button
                         variant="outline"
-                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent"
+                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent min-w-0 whitespace-normal text-center"
                         onClick={() => handleTaskClick("monthly", vessel.vessel_no, vessel.vessel_name)}
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-purple-600" />
-                            <span className="text-lg font-bold text-purple-600">{vessel.monthly_tasks}</span>
+                          <Clock className="h-4 w-4 text-purple-600 shrink-0" />
+                            <span className="text-lg font-bold text-purple-600 tabular-nums">{vessel.monthly_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">금월 예정</span>
                       </Button>
 
                       <Button
                         variant="outline"
-                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent"
+                        className="h-auto p-3 flex flex-col items-center gap-2 bg-transparent min-w-0 whitespace-normal text-center"
                         onClick={() => handleTaskClick("completed", vessel.vessel_no, vessel.vessel_name)}
                         style={{cursor: 'pointer'}}
                       >
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-lg font-bold text-green-600">{vessel.completed_tasks}</span>
+                          <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                          <span className="text-lg font-bold text-green-600 tabular-nums">{vessel.completed_tasks}</span>
                         </div>
                         <span className="text-xs text-gray-600">금월 완료</span>
                       </Button>
 
                       {/* ME / G/E 운전 시간 (조회 전용) — 위 4개 버튼과 같은 행(6칸) */}
-                      <div className="md:col-span-2">
+                      <div className="col-span-2 md:col-span-3 lg:col-span-2 min-w-0">
                         <EquipmentRuntime vesselNo={vessel.vessel_no} editable={false} compact />
                       </div>
                     </div>

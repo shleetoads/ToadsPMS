@@ -68,20 +68,25 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
 
     const sizeMap = {
       sm: "text-sm",
-      lg: "text-lg",
+      lg: "text-base md:text-lg",
       xl: "text-xl",
       "2xl": "text-2xl",
     }
 
-    const textStyle = `${sizeMap[size]} font-bold`
+    const textStyle = `${sizeMap[size]} font-bold tabular-nums`
     const unitStyle = size === "sm" || size === "lg" ? "text-xs text-gray-500" : "text-sm text-gray-500"
 
+    // 시(H) 그룹과 분(M) 그룹을 각각 한 덩어리로 묶고, 좁을 땐 그룹 단위로만 줄바꿈되게 한다.
     return (
-      <div className="flex items-end gap-1">
-        <span className={textStyle}>{hourStr}</span>
-        <span className={unitStyle}>H</span>
-        <span className={textStyle}>{minStr}</span>
-        <span className={unitStyle}>M</span>
+      <div className="flex flex-wrap items-end justify-center gap-x-1 gap-y-0 min-w-0 leading-none">
+        <span className="inline-flex items-end gap-0.5 whitespace-nowrap">
+          <span className={textStyle}>{hourStr}</span>
+          <span className={unitStyle}>H</span>
+        </span>
+        <span className="inline-flex items-end gap-0.5 whitespace-nowrap">
+          <span className={textStyle}>{minStr}</span>
+          <span className={unitStyle}>M</span>
+        </span>
       </div>
     )
   }
@@ -247,15 +252,15 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     return (
       <Card
         onClick={() => handleOnMachineClick(machineData)}
-        className={compact ? "gap-1 py-3" : "h-full"}
+        className={compact ? "gap-1 py-3 min-w-0 overflow-hidden" : "h-full min-w-0 overflow-hidden"}
       >
         <CardHeader className={compact ? "px-3" : "flex flex-row items-center justify-between space-y-0 pb-2"}>
-          <CardTitle className={compact ? "text-xs font-medium text-gray-600" : "text-sm font-medium"}>
+          <CardTitle className={compact ? "text-xs font-medium text-gray-600 truncate min-w-0" : "text-sm font-medium truncate min-w-0"}>
             {machineData.machine_name}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className={compact ? "flex justify-center px-3" : undefined}>
+        <CardContent className={compact ? "flex justify-center px-3 min-w-0" : undefined}>
           <Odometer value={getMaxRuntime(machineData.equipment_runtime_datas)} size={compact ? "lg" : "2xl"} />
         </CardContent>
       </Card>
@@ -266,9 +271,9 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
     return (
       <Card
         onClick={() => handleOnMachineClick(machineData)}
-        className={compact ? "gap-1 py-3" : "h-full"}
+        className={compact ? "gap-1 py-3 min-w-0 overflow-hidden" : "h-full min-w-0 overflow-hidden"}
       >
-        <CardContent className={compact ? "px-3" : undefined}>
+        <CardContent className={compact ? "px-3 min-w-0" : "min-w-0"}>
           <CardTitle className={compact ? "text-xs font-medium text-gray-600 mb-1" : "text-sm font-medium mb-2"}> G/E </CardTitle>
           <div className={compact ? "space-y-0.5" : "space-y-1"}>
             {(() => {
@@ -288,13 +293,13 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
               return generators.map((equipData) => (
                 <div
                   key={equipData.equip_no}
-                  className="grid grid-cols-2 gap-2"
+                  className="flex flex-wrap items-center justify-between gap-x-2"
                 >
-                  <span className={compact ? "text-xs justify-self-start" : "text-sm justify-self-start"}>
+                  <span className={compact ? "text-xs truncate min-w-0" : "text-sm truncate min-w-0"}>
                     {getSimpleName(equipData.equip_name)}
                   </span>
 
-                  <div className="justify-self-end">
+                  <div className="shrink-0">
                     <Odometer value={equipData.lastest_runtime} size={compact ? "sm" : "lg"} />
                   </div>
                 </div>
@@ -340,7 +345,7 @@ export default function EquipmentRuntime({ vesselNo, editable = true, compact = 
       }
 
     return(
-      <div className={compact ? "grid grid-cols-2 gap-4" : "grid grid-cols-2 gap-6 h-full"}>
+      <div className={compact ? "grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4 min-w-0" : "grid grid-cols-1 sm:grid-cols-2 gap-6 h-full min-w-0"}>
         <MainEngineTag key="MAIN ENGINE" machineData={meData} />
         <GeneratorEngineTag key="GENERATOR ENGINE" machineData={geData} />
       </div>

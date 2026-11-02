@@ -173,13 +173,13 @@ export default function ShipUserDashboard() {
           </div>
 
           {/* 주요 지표 카드 + Equipment Runtime (한 행, 6개) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6 mb-8">
             <ExecutionDashBoardItem status="DELAYED" count={getTasksByStatus("DELAYED")} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="WEEKLY" count={getTasksByStatus('WEEKLY') + getTasksByCalendar("EXTENSION", 'WEEK')} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="MONTHLY" count={getTasksByStatus('MONTHLY') + getTasksByCalendar("EXTENSION", 'MONTH')} handleOnClick={(status) => {handleTaskClick(status)}} />
             <ExecutionDashBoardItem status="COMPLETE" count={getTasksByStatus("COMPLETE")} handleOnClick={(status) => {handleTaskClick(status)}} />
 
-            <div className="md:col-span-2 lg:col-span-2 h-full">
+            <div className="md:col-span-2 xl:col-span-2 min-w-0 h-full">
               <EquipmentRuntime vesselNo={userInfo.ship_no} />
             </div>
           </div>
@@ -198,12 +198,12 @@ export default function ShipUserDashboard() {
                   {filteredEquipment.map((equipment) => (
                     equipment.children.some((task) => task.status === "DELAYED" || task.status === "NORMAL" || task.status === "EXTENSION") && (
                     <div key={equipment.equip_no} className="border rounded-lg p-4 bg-white">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl">⚙️</div>
-                          <div>
-                            <h3 className="font-semibold text-lg">{equipment.equip_name}</h3>
-                            <p className="text-xs text-gray-400">장비 번호: {equipment.equip_no}</p>
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl shrink-0">⚙️</div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-lg truncate">{equipment.equip_name}</h3>
+                            <p className="text-xs text-gray-400 truncate">장비 번호: {equipment.equip_no}</p>
                           </div>
                         </div>
                       </div>
@@ -212,24 +212,26 @@ export default function ShipUserDashboard() {
                         <h4 className="font-medium text-sm text-gray-700 mb-2">예정된 작업 목록:</h4>
                         {equipment.children.map((task) => (
                           task.status !== "COMPLETE" && (
-                          <div key={`${task.equip_no}-${task.section_code}-${task.plan_code}`} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
+                          <div key={`${task.equip_no}-${task.section_code}-${task.plan_code}`} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-6 h-6 bg-white rounded flex items-center justify-center shrink-0">
                                 <Wrench className="w-3 h-3 text-gray-600" />
                               </div>
-                              <div>
-                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
                                   <p className="text-sm font-medium">{task.plan_name}</p>
                                   <ExecutionItemBagde status={task.status ?? null} critical={task.critical ?? null} />
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
                                   <span>담당자: {task.manager}</span>
                                   <span>작업자수: {task.workers}</span>
                                   <span>작업자별 작업시간: {task.work_hours}시간</span>
                                 </div>
                               </div>
                             </div>
-                            {DaysUntil(task.due_date,task.extension_date)}
+                            <div className="shrink-0">
+                              {DaysUntil(task.due_date,task.extension_date)}
+                            </div>
                           </div>
                           )
                         ))}
@@ -255,25 +257,25 @@ export default function ShipUserDashboard() {
                   {filteredEquipment.map((equipment) => (
                     equipment.children.map((task) => (
                       task.status === "COMPLETE" && (
-                    <div key={task.equip_no + '-' + task.section_code + '-' + task.plan_code} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <div key={task.equip_no + '-' + task.section_code + '-' + task.plan_code} className="flex items-center justify-between gap-2 p-3 border rounded-lg bg-white">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                           <CheckCircle className="w-5 h-5 text-green-600" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{task.plan_name}</h4>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium truncate min-w-0">{task.plan_name}</h4>
                             <ExecutionItemBagde critical={task.critical ?? null} status={null} />
                           </div>
-                          <p className="text-sm text-gray-500">{task.equip_name}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                          <p className="text-sm text-gray-500 truncate">{task.equip_name}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 text-xs text-gray-500 mt-1">
                             <span>담당: {task.manager}</span>
                             <span>작업자수: {task.workers}</span>
                             <span>작업자별 작업시간: {task.work_hours}시간</span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <Badge variant="default" className="mb-2">
                           완료
                         </Badge>

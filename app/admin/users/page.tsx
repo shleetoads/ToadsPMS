@@ -372,11 +372,11 @@ export default function ShipManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 사용자 수</CardTitle>
-                <Ship className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 사용자 수</CardTitle>
+                <Ship className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{users.length}</div>
                 <p className="text-xs text-muted-foreground">등록된 사용자</p>
               </CardContent>
             </Card>
@@ -409,19 +409,19 @@ export default function ShipManagementPage() {
             {filteredUsers.map((item) => (
               <Card key={item.account_no} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Users className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{item.user_name}</CardTitle>
-                        <CardDescription>
+                      <div className="min-w-0">
+                        <CardTitle className="text-xl truncate">{item.user_name}</CardTitle>
+                        <CardDescription className="truncate">
                           {item.account_no} • {item.email}
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -436,17 +436,17 @@ export default function ShipManagementPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{item.ship_no}&nbsp;</div>
-                        <div className="text-xs text-gray-500">선박 번호</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-blue-600 tabular-nums truncate">{item.ship_no}&nbsp;</div>
+                        <div className="text-xs text-gray-500 truncate">선박 번호</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-orange-600">{item.use_yn}</div>
-                        <div className="text-xs text-gray-500">사용여부</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-orange-600 truncate">{item.use_yn}</div>
+                        <div className="text-xs text-gray-500 truncate">사용여부</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{item.user_ename}&nbsp;</div>
-                        <div className="text-xs text-gray-500">영문명</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-green-600 truncate">{item.user_ename}&nbsp;</div>
+                        <div className="text-xs text-gray-500 truncate">영문명</div>
                       </div>
                     </div>
                   </div>

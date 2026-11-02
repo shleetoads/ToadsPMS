@@ -423,11 +423,11 @@ export default function ShipManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">총 선박 수</CardTitle>
-                <Ship className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium truncate min-w-0">총 선박 수</CardTitle>
+                <Ship className="h-4 w-4 text-blue-600 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{vessels.length}</div>
+                <div className="text-2xl font-bold tabular-nums truncate">{vessels.length}</div>
                 <p className="text-xs text-muted-foreground">등록된 선박</p>
               </CardContent>
             </Card>
@@ -462,19 +462,19 @@ export default function ShipManagementPage() {
             {filteredShips.map((item) => (
               <Card key={item.vessel_no} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Ship className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{item.vessel_name}</CardTitle>
-                        <CardDescription>
-                          {item.vessel_no} • 
+                      <div className="min-w-0">
+                        <CardTitle className="text-xl truncate">{item.vessel_name}</CardTitle>
+                        <CardDescription className="truncate">
+                          {item.vessel_no} •
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0">
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -508,17 +508,17 @@ export default function ShipManagementPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{item.machine_count}</div>
-                        <div className="text-xs text-gray-500">장비 수</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-blue-600 tabular-nums truncate">{item.machine_count}</div>
+                        <div className="text-xs text-gray-500 truncate">장비 수</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-orange-600">{item.maintenance_count}</div>
-                        <div className="text-xs text-gray-500">정비 작업</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-orange-600 tabular-nums truncate">{item.maintenance_count}</div>
+                        <div className="text-xs text-gray-500 truncate">정비 작업</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{item.crew}</div>
-                        <div className="text-xs text-gray-500">승무원</div>
+                      <div className="text-center min-w-0">
+                        <div className="text-lg font-bold text-green-600 tabular-nums truncate">{item.crew}</div>
+                        <div className="text-xs text-gray-500 truncate">승무원</div>
                       </div>
                     </div>
 
