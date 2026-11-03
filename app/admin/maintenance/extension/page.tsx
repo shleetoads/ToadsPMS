@@ -265,13 +265,14 @@ export default function MaintenanceWorkManagementPage() {
       <td key="approval_status" width="120px;" className="py-3 text-center text-gray-500">
         {item.approval_status}
       </td>,
-      <td key="approval" className="py-3 text-center text-gray-500">
+      // 표가 화면보다 넓어 가로 스크롤이 생겨도 승인/반려 버튼은 오른쪽에 고정돼 항상 보이도록 sticky 처리
+      <td key="approval" className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 border-l border-gray-100 py-3 px-2 text-center text-gray-500 whitespace-nowrap">
         {item.approval_status === 'REQUEST' && (
-          <div>
-            <Button onClick={() => handleApprovalOrRejectClick(item, "APPROVAL")} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
+          <div className="flex items-center justify-center gap-2">
+            <Button onClick={() => handleApprovalOrRejectClick(item, "APPROVAL")} size="sm" style={{cursor: 'pointer'}}>
               승인
             </Button>
-            <Button onClick={() => handleApprovalOrRejectClick(item, "REJECT")} size="sm" className="ml-4" style={{cursor: 'pointer'}}>
+            <Button onClick={() => handleApprovalOrRejectClick(item, "REJECT")} size="sm" style={{cursor: 'pointer'}}>
               반려
             </Button>
           </div>
@@ -392,7 +393,10 @@ export default function MaintenanceWorkManagementPage() {
                             )
                           } else {
                             return (
-                              <th key={header.key} className={`${header.align} py-2`}>
+                              <th
+                                key={header.key}
+                                className={`${header.align} py-2 ${header.key === "approval" ? "sticky right-0 z-10 bg-white border-l border-gray-100" : ""}`}
+                              >
                                 {header.label}
                               </th>
                             )
@@ -404,7 +408,7 @@ export default function MaintenanceWorkManagementPage() {
                       {item.children.map((children, index) => (
                         <tr 
                           key={`${children.vessel_no}-${children.equip_no}-${children.section_code}-${children.plan_code}`} 
-                          className="border-b hover:bg-gray-50"
+                          className="group border-b hover:bg-gray-50"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleExtentionSelection(children);
