@@ -174,7 +174,7 @@ export default function ShipInventoryLossPage() {
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">손망실 처리</h1>

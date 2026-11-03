@@ -378,7 +378,7 @@ export default function MaintenanceWorkManagementPage() {
 
   const renderMaintenanceTree = (items: Maintenance[], level = 0) => {
     return items.map((item) => (
-      <div key={item.key} className={`${level > 0 ? "ml-6" : ""}`}>
+      <div key={item.key} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
           <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
             {item.children && item.children.length > 0 && (
@@ -393,21 +393,21 @@ export default function MaintenanceWorkManagementPage() {
               </CollapsibleTrigger>
             )}
 
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
                   {item.type === 'VESSEL' ? (
-                    <Ship className="w-5 h-5" />
+                    <Ship className="w-5 h-5 shrink-0" />
                   ) : (
                     item.type === "EQUIPMENT" ? (
-                      <FolderTree className="w-5 h-5 text-blue-600" />
+                      <FolderTree className="w-5 h-5 text-blue-600 shrink-0" />
                     ) : (
-                      <Wrench className="w-5 h-5 text-orange-600" />
+                      <Wrench className="w-5 h-5 text-orange-600 shrink-0" />
                     )
                   )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{`${item.name}`}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium truncate min-w-0">{`${item.name}`}</span>
                       <span className="text-sm text-gray-500">({item.id})</span>
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {item.children && item.children.length > 0 && item.type !== "EQUIPMENT" && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 {renderMaintenanceTree(item.children, level + 1)}
               </div>
             </CollapsibleContent>
@@ -427,7 +427,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {item.children && item.children.length > 0 && item.type === "EQUIPMENT" && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -522,7 +522,7 @@ export default function MaintenanceWorkManagementPage() {
       <Header userType={userInfo.user_auth} />
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>

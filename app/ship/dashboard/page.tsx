@@ -166,7 +166,7 @@ export default function ShipUserDashboard() {
       <Header userType={userInfo.user_auth} />
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.ship_name} - 선박 대시보드</h1>
             <p className="text-gray-600">{userInfo.ship_no} 선박의 유지보수 현황을 관리하세요</p>

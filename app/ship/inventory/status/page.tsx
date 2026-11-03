@@ -86,7 +86,7 @@ export default function ShipInventoryStatusPage() {
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>

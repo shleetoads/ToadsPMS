@@ -266,7 +266,7 @@ export default function InventoryStatusPage() {
 
   const renderInventoryTree = (items: Inventory[], level = 0) => {
     return items.map((item) => (
-      <div key={item.key} className={`${level > 0 ? "ml-6" : ""}`}>
+      <div key={item.key} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
           <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
             {item.children && item.children.length > 0 && (
@@ -281,17 +281,17 @@ export default function InventoryStatusPage() {
               </CollapsibleTrigger>
             )}
 
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
                   {item.type === 'VESSEL' ? (
-                    <Ship className="w-5 h-5" />
+                    <Ship className="w-5 h-5 shrink-0" />
                   ) : (
-                    <Wrench className="w-5 h-5 text-orange-600" />
+                    <Wrench className="w-5 h-5 text-orange-600 shrink-0" />
                   )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{`${item.name}`}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium truncate min-w-0">{`${item.name}`}</span>
                     </div>
                   </div>
                 </div>
@@ -301,7 +301,7 @@ export default function InventoryStatusPage() {
 
           {item.children && item.children.length > 0 && item.type !== "MACHINE" && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 {renderInventoryTree(item.children, level + 1)}
               </div>
             </CollapsibleContent>
@@ -309,7 +309,7 @@ export default function InventoryStatusPage() {
 
           {item.children && item.children.length > 0 && item.type === "MACHINE" && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -408,9 +408,9 @@ export default function InventoryStatusPage() {
                   <CardTitle className="text-lg">필터 및 검색</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex flex-col md:flex-row flex-wrap gap-4">
                     <Select value={shipFilter} onValueChange={setShipFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -421,7 +421,7 @@ export default function InventoryStatusPage() {
                       </SelectContent>
                     </Select>
                     <Select value={machineFilter} onValueChange={setMachineFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

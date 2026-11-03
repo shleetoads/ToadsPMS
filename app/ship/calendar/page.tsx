@@ -269,7 +269,7 @@ export default function ShipCalendarPage() {
       <Header userType={userInfo.user_auth} />
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 min-w-0 p-6 overflow-y-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.ship_name} - Equipment Maintenance Gantt Chart</h1>
             <p className="text-gray-600">Ship : {userInfo.ship_no}</p>

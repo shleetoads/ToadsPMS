@@ -16,7 +16,7 @@ export default function ReceivingLoading() {
             ))}
           </div>
         </div>
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <Skeleton className="h-10 w-24" />

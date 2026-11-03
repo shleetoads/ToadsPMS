@@ -18,7 +18,7 @@ export default function Loading() {
             </div>
           </div>
         </div>
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="space-y-6">
             <div>
               <Skeleton className="h-8 w-48 mb-2" />

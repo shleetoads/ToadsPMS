@@ -291,7 +291,7 @@ export default function MaintenanceWorkManagementPage() {
 
   const renderMaintenance = (parent: Section, level = 2) => {
     return parent.children.map((item) => (
-      <div key={`${item.equip_no}-${item.section_code}-${item.plan_code}`} className={`${level > 0 ? "ml-6" : ""}`}>
+      <div key={`${item.equip_no}-${item.section_code}-${item.plan_code}`} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(`${item.equip_no}-${item.section_code}-${item.plan_code}`)} onOpenChange={() => toggleExpanded(`${item.equip_no}-${item.section_code}-${item.plan_code}`)}>
           <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
             <div className="flex-1 flex items-center justify-between gap-2">
@@ -339,7 +339,7 @@ export default function MaintenanceWorkManagementPage() {
 
   const renderSection =  (parent: Equipment, level = 1) => {
     return parent.children.map((item) => (
-      <div key={`${item.equip_no}-${item.section_code}`} className={`${level > 0 ? "ml-6" : ""}`}>
+      <div key={`${item.equip_no}-${item.section_code}`} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(`${item.equip_no}-${item.section_code}`)} onOpenChange={() => toggleExpanded(`${item.equip_no}-${item.section_code}`)}>
           <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
             {item.children && item.children.length > 0 && (
@@ -386,7 +386,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {item.children && item.children.length > 0 && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 {renderMaintenance(item, level + 1)}
               </div>
             </CollapsibleContent>
@@ -398,7 +398,7 @@ export default function MaintenanceWorkManagementPage() {
 
   const renderMaintenanceTree = (items: Maintenance[], level = 0) => {
     return items.map((item) => (
-      <div key={item.key} className={`${level > 0 ? "ml-6" : ""}`}>
+      <div key={item.key} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
           <div
             className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50"
@@ -470,7 +470,7 @@ export default function MaintenanceWorkManagementPage() {
 
           {item.children && item.children.length > 0 && (
             <CollapsibleContent>
-              <div className="ml-4 border-l-2 border-gray-200 pl-4">
+              <div className="ml-2 pl-2 md:ml-4 md:pl-4 border-l-2 border-gray-200 min-w-0">
                 {renderMaintenanceTree(item.children, level + 1)}
               </div>
             </CollapsibleContent>
@@ -839,7 +839,7 @@ export default function MaintenanceWorkManagementPage() {
       <Header userType={userInfo.user_auth} />
       <div className="flex">
         <Sidebar userType={userInfo.user_auth} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0 p-6">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
