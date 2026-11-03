@@ -305,7 +305,7 @@ export default function MaintenanceWorkManagementPage() {
     return items.map((item) => (
       <div key={item.id} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(item.id)} onOpenChange={() => toggleExpanded(item.id)}>
-          <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
+          <div className="flex items-start lg:items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50 min-w-0">
             {item.children && item.children.length > 0 && (
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="p-0 h-auto" style={{cursor: 'pointer'}}>
@@ -318,8 +318,8 @@ export default function MaintenanceWorkManagementPage() {
               </CollapsibleTrigger>
             )}
 
-            <div className="flex-1 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex-1 min-w-0 flex flex-col items-start gap-1 lg:flex-row lg:items-center lg:justify-between lg:gap-2">
+              <div className="flex items-center gap-3 min-w-0 w-full lg:w-auto lg:flex-1">
                 <div className="flex items-center gap-2 min-w-0">
                   {item.type === 'VESSEL' ? (
                     <Ship className="w-5 h-5 shrink-0" />
@@ -352,7 +352,7 @@ export default function MaintenanceWorkManagementPage() {
                       )}
                     </div>
                     {item.type === "TASK" && (
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
                         {item.interval && (
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -366,15 +366,15 @@ export default function MaintenanceWorkManagementPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0 max-w-full lg:justify-end">
                 {item.type === "TASK" && item.lastest_date && (
-                  <span className="text-sm text-gray-500">최근 정비: {item.lastest_date}</span>
+                  <span className="whitespace-nowrap text-sm text-gray-500">최근 정비: {item.lastest_date}</span>
                 )}
                 {item.type === "TASK" && item.due_date && (
                   <span className="text-sm text-gray-500">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-500">예정일: {item.due_date}</span>
+                      <span className="whitespace-nowrap text-sm text-gray-500">예정일: {item.due_date}</span>
                     </div>
                   </span>
                 )}

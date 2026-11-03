@@ -380,7 +380,7 @@ export default function MaintenanceWorkManagementPage() {
     return items.map((item) => (
       <div key={item.key} className={`${level > 0 ? "ml-2 md:ml-6" : ""} min-w-0`}>
         <Collapsible open={expandedItems.has(item.key || '')} onOpenChange={() => toggleExpanded(item.key || '')}>
-          <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50">
+          <div className="flex items-center gap-2 p-3 border rounded-lg mb-2 bg-white hover:bg-gray-50 min-w-0">
             {item.children && item.children.length > 0 && (
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="p-0 h-auto" style={{cursor: 'pointer'}}>
@@ -393,7 +393,7 @@ export default function MaintenanceWorkManagementPage() {
               </CollapsibleTrigger>
             )}
 
-            <div className="flex-1 flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="flex items-center gap-2 min-w-0">
                   {item.type === 'VESSEL' ? (
