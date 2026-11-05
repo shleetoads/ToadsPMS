@@ -206,7 +206,9 @@ namespace ToadsPmsEdge
         {
             try
             {
-                if (GetConsoleWindow() != IntPtr.Zero && !Console.IsInputRedirected)
+                // 서비스(nssm, 세션 0)로 실행 중이면 키 입력을 기다리지 않는다.
+                // 기다리면 프로세스가 끝나지 않아 nssm 의 자동 재시작이 동작하지 않는다.
+                if (Environment.UserInteractive && GetConsoleWindow() != IntPtr.Zero && !Console.IsInputRedirected)
                 {
                     Console.Error.WriteLine("아무 키나 누르면 창이 닫힙니다 ...");
                     Console.ReadKey(true);
