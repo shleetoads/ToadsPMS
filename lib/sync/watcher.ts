@@ -1,59 +1,45 @@
 // lib/sync/watcher.ts
-// 선상 엣지: 회선 감지 트리거 (설계 D5, §8)
-// 중앙 도달성을 주기적으로 확인하고, offline→online 전이 순간 자동 수신을 실행한다.
+// 선상 엣지: 고정 주기 동기화 트리거 (설계 D5, §8).
+// 서버 기동 직후 1회 + 이후 고정 간격(기본 10분)으로 로컬 /api/scheduler/sync 를 호출한다.
 //
 // 중요: 이 모듈은 instrumentation 그래프에 포함되므로 db(pg)를 직접 import하지 않는다.
-// 대신 로컬 수신 엔드포인트를 HTTP로 호출한다 → pg가 instrumentation 번들에 섞이는 문제 회피.
+// 오직 자기 프로세스의 HTTP 엔드포인트만 호출한다 → pg가 instrumentation 번들에 섞이는 문제 회피.
 
 let started = false;
-let syncing = false;   // 동시 실행 방지 뮤텍스
-let online = false;    // 마지막 회선 상태
 
-/** 중앙 도달성 확인: 루트 GET에 짧은 타임아웃. 5xx/네트워크오류 = 도달 불가. */
-async function probe(remote: string, timeoutMs: number): Promise<boolean> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(`${remote}/`, { method: 'GET', signal: ctrl.signal });
-    return res.status < 500;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
-  }
+const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
+
+/** 연결 거부(로컬 서버 아직 미기동) 판별 */
+function isConnRefused(err: any): boolean {
+  const code = err?.cause?.code ?? err?.code;
+  const msg = err?.message ?? '';
+  return code === 'ECONNREFUSED' || /ECONNREFUSED|fetch failed/i.test(msg);
 }
 
-/** 최초 온보딩(빈 DB면 자동 시드). 중앙 미지원/실패는 비치명적. */
-async function triggerOnboard(localUrl: string): Promise<void> {
+/** 자동 동기화 1회 호출. 절대 throw 하지 않음. { thrown } 로 네트워크 예외 여부만 알린다. */
+async function runOnce(localUrl: string): Promise<{ thrown: boolean; err?: any }> {
   try {
-    const res = await fetch(`${localUrl}/api/scheduler/seed?ifEmpty=1`);
-    const j: any = await res.json().catch(() => ({}));
-    if (res.ok && j?.seeded) console.log(`[watcher] 최초 온보딩 시드 완료: total=${j.total}`);
-    else if (!res.ok) console.error('[watcher] 온보딩 시드 실패(비치명적):', j?.message ?? `HTTP ${res.status}`);
-  } catch (err) {
-    console.error('[watcher] 온보딩 시드 건너뜀:', (err as Error).message);
-  }
-}
-
-/** 온라인 전이 시: (빈 DB면)자동 온보딩 → 증분 수신. 수신 성공 여부 반환. */
-async function triggerOnline(localUrl: string): Promise<boolean> {
-  if (syncing) return false;
-  syncing = true;
-  try {
-    await triggerOnboard(localUrl);            // 최초 1회만 실제 시드(ifEmpty)
-    const res = await fetch(`${localUrl}/api/scheduler/receive`);
+    const res = await fetch(`${localUrl}/api/scheduler/sync?trigger=auto`, { method: 'POST' });
     const j: any = await res.json().catch(() => ({}));
     if (res.ok && j?.success) {
-      console.log(`[watcher] receive ok: total=${j.total}`, j.counts);
-      return true;
+      console.log(`[watcher] sync ok: up=${j.uploaded} down=${j.downloaded} mode=${j.mode ?? '-'}`);
+    } else {
+      console.error(`[watcher] sync failed: ${j?.message ?? `HTTP ${res.status}`}`);
     }
-    console.error('[watcher] receive failed:', j?.message ?? `HTTP ${res.status}`);
-    return false;
+    return { thrown: false };
   } catch (err) {
-    console.error('[watcher] online 처리 오류:', (err as Error).message);
-    return false;
-  } finally {
-    syncing = false;
+    console.error('[watcher] sync 호출 오류:', (err as Error).message);
+    return { thrown: true, err };
+  }
+}
+
+/** 최초 1회. 로컬 서버가 아직 리스닝 전(연결 거부)이면 15초 간격 최대 5회 재시도. */
+async function firstRun(localUrl: string): Promise<void> {
+  for (let retries = 0; ; retries++) {
+    const r = await runOnce(localUrl);
+    if (!r.thrown || !isConnRefused(r.err) || retries >= 5) return;
+    console.log(`[watcher] 로컬 서버 미기동(연결 거부) — 15초 후 재시도 (${retries + 1}/5)`);
+    await sleep(15000);
   }
 }
 
@@ -63,33 +49,17 @@ export function startWatcher(): void {
   const remote = process.env.REMOTE_SITE_URL;
   const vessel = process.env.VESSEL;
   // 자기 자신(같은 프로세스의 HTTP 서버)을 호출해야 하므로 항상 자기 PORT 사용.
-  // (LOCAL_SITE_URL 은 중앙/다른 인스턴스를 가리킬 수 있어 신뢰 불가)
   const localUrl = `http://127.0.0.1:${process.env.PORT || 30001}`;
   if (!remote || !vessel) {
     console.log('[watcher] disabled (REMOTE_SITE_URL/VESSEL 미설정)');
     return;
   }
 
-  const pollMs = Number(process.env.SYNC_POLL_MS) || 20000;
-  const probeTimeoutMs = Number(process.env.SYNC_PROBE_TIMEOUT_MS) || 3000;
+  const interval = Number(process.env.SYNC_INTERVAL_MS) || 600000;       // 기본 10분
+  const startupDelay = Number(process.env.SYNC_STARTUP_DELAY_MS) || 15000; // 기동 후 첫 실행 지연
   started = true;
-  console.log(`[watcher] started poll=${pollMs}ms remote=${remote} vessel=${vessel}`);
+  console.log(`[watcher] started interval=${interval}ms remote=${remote} vessel=${vessel}`);
 
-  const tick = async () => {
-    const reachable = await probe(remote, probeTimeoutMs);
-    if (!reachable) {
-      if (online) { online = false; console.log('[watcher] connectivity online→offline (수신 보류)'); }
-      return;
-    }
-    // 도달 가능하지만 아직 online 미확정 → 수신 시도(성공해야 online 확정 = 실패 시 다음 tick 재시도)
-    if (!online) {
-      console.log('[watcher] connectivity offline→online → 온보딩/수신 실행');
-      const ok = await triggerOnline(localUrl);
-      if (ok) online = true;
-    }
-  };
-
-  // 기동 즉시 1회 + 주기 폴링
-  void tick();
-  setInterval(() => void tick(), pollMs);
+  setTimeout(() => void firstRun(localUrl), startupDelay);
+  setInterval(() => void runOnce(localUrl), interval);
 }

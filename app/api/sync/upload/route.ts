@@ -37,11 +37,10 @@ export async function POST(req: Request) {
     await withTransaction(async (client) => {
       await client.query("SET LOCAL app.sync_apply = 'on'");
       for (const { table, pk } of UPLOAD_TABLE_MAP) {
-        const rows = (rowsByTable[table] ?? []).map((r) => {
-          const { change_seq, ...rest } = r; // 발신자 seq 제거(수신측 자기 시퀀스)
-          return rest;
+        // upsertRows 가 change_seq 를 항상 제거(수신측 자기 시퀀스). 페이로드에 없는 테이블은 무시.
+        counts[table] = await upsertRows(client, table, pk, rowsByTable[table], {
+          stampReceiveDate: false,
         });
-        counts[table] = await upsertRows(client, table, pk, rows, false);
       }
     });
     const total = Object.values(counts).reduce((a, b) => a + b, 0);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/db';
+import { withTransaction } from '@/db';
 import { verifyNode } from '@/lib/sync/nodeAuth';
+import { rawQuery } from '@/lib/sync/rawQuery';
 
 // 온보딩 전체 시드 (중앙 → 신규 엣지, 최초 1회).
 // 설계: MD/00.Build/SHIP_EDGE_SYNC_DESIGN_2026-07-01.md §9.2 (V3), CENTRAL_REDEPLOY_PLAN §2.1
@@ -39,14 +40,18 @@ export async function POST(req: Request) {
   }
 
   try {
+    // rawQuery: 날짜/시간을 PostgreSQL 원문 문자열로 받아 TZ 왜곡 없이 전송(§rawQuery).
+    // query() 대신 트랜잭션 클라이언트로 전부 읽는다(응답 shape 동일).
     const bundle: Record<string, any[]> = {};
-    // 전역 참조: tenant (user FK 대상). vessel 스코프 아님 → 전량.
-    bundle['tenant'] = await query(`select * from tenant`);
-    for (const t of VESSEL_TABLES) {
-      bundle[t] = await query(`select * from "${t}" where vessel_no = @v`, [{ name: 'v', value: vesselNo }]);
-    }
-    // user 는 vessel_no 가 없고 ship_no(FK) 로 연결 → 해당 선박 승선원만
-    bundle['user'] = await query(`select * from "user" where ship_no = @v`, [{ name: 'v', value: vesselNo }]);
+    await withTransaction(async (client) => {
+      // 전역 참조: tenant (user FK 대상). vessel 스코프 아님 → 전량.
+      bundle['tenant'] = await rawQuery(client, `select * from tenant`);
+      for (const t of VESSEL_TABLES) {
+        bundle[t] = await rawQuery(client, `select * from "${t}" where vessel_no = $1`, [vesselNo]);
+      }
+      // user 는 vessel_no 가 없고 ship_no(FK) 로 연결 → 해당 선박 승선원만
+      bundle['user'] = await rawQuery(client, `select * from "user" where ship_no = $1`, [vesselNo]);
+    });
 
     const totals: Record<string, number> = {};
     for (const [k, v] of Object.entries(bundle)) totals[k] = v.length;

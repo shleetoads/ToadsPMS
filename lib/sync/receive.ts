@@ -32,7 +32,8 @@ export async function runReceive(opts: {
   await withTransaction(async (client) => {
     await client.query("SET LOCAL app.sync_apply = 'on'"); // 받은 행이 로컬 델타에 재진입하지 않도록(F2)
     for (const { key, table, pk } of RECEIVE_TABLE_MAP) {
-      counts[table] = await upsertRows(client, table, pk, bundle[key]);
+      // 레거시 수신: 갱신 시 last_receive_date 스탬프 유지(해당 컬럼 보유 테이블만).
+      counts[table] = await upsertRows(client, table, pk, bundle[key], { stampReceiveDate: true });
     }
   });
 

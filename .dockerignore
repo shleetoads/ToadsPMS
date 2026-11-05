@@ -4,6 +4,9 @@ node_modules
 out
 build
 
+# 선박 설치 패키지 (docker save 로 만든 이미지 tar 가 빌드 컨텍스트에 실리지 않도록)
+edge-package/
+
 # Git·CI
 .git
 .gitignore

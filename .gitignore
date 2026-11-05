@@ -25,3 +25,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# edge package image (본사에서 docker save 로 생성; 리포에 커밋 안 함)
+edge-package/pms-edge.tar
+edge-package/*.tar
