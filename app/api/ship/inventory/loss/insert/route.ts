@@ -88,18 +88,23 @@ export async function POST(req: Request) {
     );
 
     // 선박에서 저장된 정비 정보 전송
-    if (sendData[0]) {
-      const fetchResponse = await fetch(`${remoteSiteUrl}/api/data/inventory/loss/sets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sendData),
-      });
+    // 베스트에포트 레거시 전송: 주기적 동기화 엔진이 본 경로를 대체하므로, 전송 실패/지연이
+    // 이미 커밋된 저장(응답)에 절대 영향을 주지 않도록 한다. remoteSiteUrl 미설정 시 건너뜀.
+    if (remoteSiteUrl && sendData[0]) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3000);
+        const fetchResponse = await fetch(`${remoteSiteUrl}/api/data/inventory/loss/sets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(sendData),
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timer));
 
-      if (fetchResponse.ok) {
-        // 정비 정보의 마지막 전송일자 수정
-        try {
+        if (fetchResponse.ok) {
+          // 정비 정보의 마지막 전송일자 수정
           await withTransaction(async (client) => {
             for (const item of sendData) {
               const queryString =
@@ -117,10 +122,9 @@ export async function POST(req: Request) {
               await client.query(text, values);
             }
           });
-        } catch (err) {
-          console.error(err);
-          return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
         }
+      } catch (err) {
+        console.error('[forward] loss forward failed:', (err as Error).message);
       }
     }
     // 성공 정보 반환

@@ -76,7 +76,8 @@ export async function POST(req: Request) {
                                 from receive
                                where vessel_no = @vesselNo
                                  and receive_type = @adjustmentType
-                                 and regist_user = @registUser);`,
+                                 and regist_user = @registUser)
+            and coalesce(delete_yn, 'N') = 'N';`,
         [
           { name: 'vesselNo', value: item.vessel_no },
           { name: 'adjustmentDate', value: item.adjustment_date },

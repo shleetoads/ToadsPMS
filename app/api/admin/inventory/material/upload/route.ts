@@ -178,7 +178,8 @@ export async function POST(req: Request) {
             , regist_user
           from material
         where regist_user = @registUser
-          and to_char(regist_date, 'YYYY-MM-DD') = to_char(now()::timestamp, 'YYYY-MM-DD');`,
+          and to_char(regist_date, 'YYYY-MM-DD') = to_char(now()::timestamp, 'YYYY-MM-DD')
+          and coalesce(delete_yn, 'N') = 'N';`,
       [
         { name: 'registUser', value: registUser },
       ]

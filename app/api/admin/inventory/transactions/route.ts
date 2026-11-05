@@ -52,6 +52,7 @@ export async function POST(req: Request) {
                  from receive
                 where receive_date between to_char(@startDate, 'YYYY-MM-DD') and to_char(@endDate, 'YYYY-MM-DD')
                   and receive_type in ('I0', 'AI')
+                  and coalesce(delete_yn, 'N') = 'N'
                union all
                select vessel_no
                     , loss_no
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
         inner join material as c
            on a.vessel_no = c.vessel_no
           and a.material_code = c.material_code
+          and coalesce(c.delete_yn, 'N') = 'N'
         where a.vessel_no like case @vesselNo when 'all' then '' else @vesselNo end || '%'
           and c.machine_name like case @machineName when 'all' then '' else @machineName end || '%'
           and a.location like case @location when 'all' then '' else @location end || '%'

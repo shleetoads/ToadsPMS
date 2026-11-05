@@ -52,6 +52,11 @@ export function clearColumnCache(): void {
   columnCache.clear();
 }
 
+// 소프트 삭제(delete_yn='Y') 대상 테이블. 삭제는 물리 삭제가 아니라 일반 UPDATE 이므로
+// 기존 동기화(select * + 컬럼 교집합 upsert)가 그대로 전파한다 — 별도 처리 불필요.
+// vessel/"user" 의 기존 delete_yn 관례와 동일. (현재 단계 대상: warehouse/material/receive)
+export const SOFT_DELETE_TABLES: readonly string[] = ['warehouse', 'material', 'receive'];
+
 export type UpsertOptions = {
   /** 갱신 시 last_receive_date=now() 세팅(해당 컬럼 보유 테이블만 적용) */
   stampReceiveDate?: boolean;

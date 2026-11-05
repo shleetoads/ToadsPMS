@@ -34,6 +34,7 @@ export async function GET(req: Request) {
                  from vessel as a
                  left outer join warehouse as b
                    on a.vessel_no = b.vessel_no
+                  and coalesce(b.delete_yn, 'N') = 'N'
                 where a.use_yn = 'Y'
                   and b.use_yn = 'Y') as a
         order by a.vessel_no

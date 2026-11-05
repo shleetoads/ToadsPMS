@@ -29,7 +29,8 @@ export async function GET(req: Request) {
                     , (select sum(coalesce(receive_qty, 0))
                          from receive
                         where vessel_no = b.vessel_no
-                          and material_code = b.material_code) as receive_qty
+                          and material_code = b.material_code
+                          and coalesce(delete_yn, 'N') = 'N') as receive_qty
                     , (select sum(coalesce(release_qty, 0))
                          from "release"
                         where vessel_no = b.vessel_no
@@ -41,6 +42,7 @@ export async function GET(req: Request) {
                  from vessel as a
                 inner join material as b
                    on a.vessel_no = b.vessel_no
+                  and coalesce(b.delete_yn, 'N') = 'N'
 				         left outer join machine as c
 				           on b.vessel_no = c.vessel_no
 				          and b.machine_name = c.machine_name

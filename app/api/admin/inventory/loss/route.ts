@@ -25,6 +25,7 @@ export async function GET(req: Request) {
         inner join material as c
            on a.vessel_no = c.vessel_no
           and a.material_code = c.material_code
+          and coalesce(c.delete_yn, 'N') = 'N'
         order by a.vessel_no, a.loss_date`);
 
     // 성공 시 데쉬보드 정보 반환

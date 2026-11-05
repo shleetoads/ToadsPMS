@@ -116,7 +116,8 @@ export async function POST(req: Request) {
             , regist_user
           from material
          where vessel_no = @vesselNo
-           and material_code = @materialCode;`,
+           and material_code = @materialCode
+           and coalesce(delete_yn, 'N') = 'N';`,
       [
         { name: 'vesselNo', value: item.vessel_no },
         { name: 'materialCode', value: item.material_code },

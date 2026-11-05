@@ -18,6 +18,10 @@
 --   - vessel / "user" 에는 change_seq 컬럼·트리거를 붙이지 않는다(타 프로그램 소유).
 --   - 기존 데이터 백필(UPDATE ... change_seq) 을 하지 않는다
 --     (데이터 수신 후 재실행 시 전 행을 "업로드 대상"으로 오탐하는 것을 방지).
+--   - 동기화 컬럼: 13개 선박 테이블에 change_seq(+인덱스·트리거) 와 sent_seq(업로드 표시용) 를 추가.
+--     sent_seq 는 동기화 엔진이 업로드한 행을 표시하는 용도이며 트리거/인덱스는 없다.
+--   - 소프트 삭제: warehouse / material / receive 에 delete_yn 추가
+--     (삭제는 행을 지우지 않고 이 값을 'Y' 로 바꾼다. vessel.delete_yn 과 동일 규칙).
 --
 -- [실행 방법]
 --   psql -h 127.0.0.1 -U <user> -d <document_db> -v ON_ERROR_STOP=1 -f 100_pms_on_document_db.sql
@@ -291,6 +295,14 @@ CREATE TABLE IF NOT EXISTS public.loss (
     last_send_date timestamp without time zone,
     last_receive_date timestamp without time zone
 );
+
+-- -----------------------------------------------------------------------------
+-- 1-2) 소프트 삭제 플래그 delete_yn (삭제는 행을 지우지 않고 이 값을 'Y' 로 바꾼다)
+--      vessel.delete_yn 과 동일 규칙. 앱도 기동 시 추가하지만 설치 때 미리 완성.
+-- -----------------------------------------------------------------------------
+ALTER TABLE public.warehouse ADD COLUMN IF NOT EXISTS delete_yn character(1) NOT NULL DEFAULT 'N';
+ALTER TABLE public.material ADD COLUMN IF NOT EXISTS delete_yn character(1) NOT NULL DEFAULT 'N';
+ALTER TABLE public.receive ADD COLUMN IF NOT EXISTS delete_yn character(1) NOT NULL DEFAULT 'N';
 
 -- -----------------------------------------------------------------------------
 -- 2) PRIMARY KEY 제약 (멱등 가드)
@@ -612,7 +624,8 @@ $$;
 -- 6-1) DB별 단조증가 시퀀스 (벽시계 대신 이 순번으로 델타 판정)
 CREATE SEQUENCE IF NOT EXISTS pms_change_seq;
 
--- 6-2) 동기화 대상 13개 PMS 테이블에 change_seq 컬럼 + 인덱스
+-- 6-2) 동기화 대상 13개 PMS 테이블에 change_seq(+인덱스) 와 sent_seq 컬럼
+--      sent_seq: 동기화 엔진이 업로드 완료 행을 표시(트리거/인덱스 없음)
 DO $$
 DECLARE t text;
 DECLARE tables text[] := ARRAY[
@@ -634,6 +647,7 @@ BEGIN
   FOREACH t IN ARRAY tables LOOP
     EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS change_seq bigint;', t);
     EXECUTE format('CREATE INDEX IF NOT EXISTS ix_%s_change_seq ON %I (change_seq);', t, t);
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS sent_seq bigint;', t);
   END LOOP;
 END $$;
 
@@ -694,12 +708,15 @@ ON CONFLICT (peer, direction) DO NOTHING;
 -- -----------------------------------------------------------------------------
 SELECT t.table_name,
        (to_regclass('public.' || quote_ident(t.table_name)) IS NOT NULL) AS exists,
-       EXISTS (
-         SELECT 1 FROM information_schema.columns c
-          WHERE c.table_schema = 'public'
-            AND c.table_name = t.table_name
-            AND c.column_name = 'change_seq'
-       ) AS has_change_seq
+       EXISTS (SELECT 1 FROM information_schema.columns c
+                WHERE c.table_schema='public' AND c.table_name=t.table_name
+                  AND c.column_name='change_seq') AS has_change_seq,
+       EXISTS (SELECT 1 FROM information_schema.columns c
+                WHERE c.table_schema='public' AND c.table_name=t.table_name
+                  AND c.column_name='sent_seq')   AS has_sent_seq,
+       EXISTS (SELECT 1 FROM information_schema.columns c
+                WHERE c.table_schema='public' AND c.table_name=t.table_name
+                  AND c.column_name='delete_yn') AS has_delete_yn
 FROM (VALUES
   ('material_type'),
   ('material_unit'),

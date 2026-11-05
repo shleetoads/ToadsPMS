@@ -44,7 +44,20 @@ export async function POST(req: Request) {
             , @standardQty
             , now()::timestamp
             , @registUser
-      );`;
+      )
+      on conflict (vessel_no, material_code) do update
+         set machine_name = excluded.machine_name
+           , material_name = excluded.material_name
+           , material_group = excluded.material_group
+           , material_spec = excluded.material_spec
+           , material_type = excluded.material_type
+           , material_unit = excluded.material_unit
+           , warehouse_no = excluded.warehouse_no
+           , drawing_no = excluded.drawing_no
+           , standard_qty = excluded.standard_qty
+           , modify_date = now()::timestamp
+           , modify_user = excluded.regist_user
+           , delete_yn = 'N';`;
 
       let params: NamedParam[] = [
         { name: 'vesselNo', value: item.vessel_no },
@@ -158,7 +171,8 @@ export async function POST(req: Request) {
                                  from material
                                 where vessel_no = @vesselNo
                                   and machine_name = @machineName
-                                  and regist_user = @registUser);`,
+                                  and regist_user = @registUser)
+          and coalesce(delete_yn, 'N') = 'N';`,
       [
         { name: 'vesselNo', value: item.vessel_no },
         { name: 'machineName', value: item.machine_name },

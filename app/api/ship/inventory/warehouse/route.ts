@@ -23,14 +23,16 @@ export async function GET(req: Request) {
             , (select count(1)
                  from receive
                 where vessel_no = a.vessel_no
-                  and receive_location = a.warehouse_no) as receiving_count
+                  and receive_location = a.warehouse_no
+                  and coalesce(delete_yn, 'N') = 'N') as receiving_count
              , to_char(a.regist_date, 'YYYY-MM-DD') as regist_date
              , to_char(a.modify_date, 'YYYY-MM-DD') as modify_date
           from warehouse as a
         inner join vessel as b
             on a.vessel_no = b.vessel_no
         where a.vessel_no = @vesselNo
-          and a.use_yn = 'Y';`,
+          and a.use_yn = 'Y'
+          and coalesce(a.delete_yn, 'N') = 'N';`,
       [
         { name: 'vesselNo', value: vesselNo }
       ]

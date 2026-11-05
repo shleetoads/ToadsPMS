@@ -182,7 +182,8 @@ export async function POST(req: Request) {
           from material
         where vessel_no = @vesselNo
           and regist_user = @registUser
-          and to_char(regist_date, 'YYYY-MM-DD') = to_char(now()::timestamp, 'YYYY-MM-DD');`,
+          and to_char(regist_date, 'YYYY-MM-DD') = to_char(now()::timestamp, 'YYYY-MM-DD')
+          and coalesce(delete_yn, 'N') = 'N';`,
       [
         { name: 'vesselNo', value: vesselNo },
         { name: 'registUser', value: registUser },

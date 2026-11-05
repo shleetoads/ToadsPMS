@@ -27,6 +27,7 @@ export async function GET(req: Request) {
          from vessel as a
          left outer join material as b
            on a.vessel_no = b.vessel_no
+          and coalesce(b.delete_yn, 'N') = 'N'
          left outer join machine as c
            on b.vessel_no = c.vessel_no
           and b.machine_name = c.machine_name
@@ -34,9 +35,11 @@ export async function GET(req: Request) {
            on b.vessel_no = d.vessel_no
           and b.material_code = d.material_code
           and d.receive_type = 'S0'
+          and coalesce(d.delete_yn, 'N') = 'N'
          left outer join warehouse as e
            on b.vessel_no = e.vessel_no
           and b.warehouse_no = e.warehouse_no
+          and coalesce(e.delete_yn, 'N') = 'N'
         where a.vessel_no = @vesselNo
           and a.use_yn = 'Y'
         order by a.vessel_no, coalesce(c.sort_no, 999), b.machine_name, b.material_code;`,

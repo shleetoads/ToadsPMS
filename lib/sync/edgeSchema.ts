@@ -6,6 +6,7 @@
 import { withTransaction } from '@/db';
 import { UPLOAD_TABLE_MAP, clearColumnCache } from './upsert';
 import { isEdge } from './engine';
+import { ensureSoftDeleteColumns } from './softDeleteSchema';
 import type { PoolClient } from 'pg';
 
 // 프로세스당 1회(성공 시) — 실패하면 플래그를 세우지 않아 다음 회차에 재시도.
@@ -45,6 +46,8 @@ async function triggerExists(client: PoolClient, table: string, trg: string): Pr
  */
 export async function ensureEdgeSyncSchema(): Promise<void> {
   if (!isEdge()) return;
+  // soft-delete 컬럼도 함께 보강(멱등·자체 플래그) → 엣지는 한 번 호출로 스키마 완결.
+  await ensureSoftDeleteColumns();
   if (g.__pmsEdgeSchemaReady) return;
 
   let ensured = 0;

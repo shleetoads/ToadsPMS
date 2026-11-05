@@ -21,6 +21,7 @@ export async function GET(req: Request) {
          from vessel as a
          left outer join material as b
            on a.vessel_no = b.vessel_no
+          and coalesce(b.delete_yn, 'N') = 'N'
          left outer join (select a1.vessel_no
                                , a1.material_code
                                , a1.location
@@ -32,6 +33,7 @@ export async function GET(req: Request) {
                                        , receive_qty as qty
                                     from receive
                                    where vessel_no = @vesselNo
+                                     and coalesce(delete_yn, 'N') = 'N'
                                   union all
                                   select vessel_no
                                        , material_code
@@ -56,6 +58,7 @@ export async function GET(req: Request) {
 		     left outer join warehouse as e
 		       on d.vessel_no = e.vessel_no
 		      and d.location = e.warehouse_no
+		      and coalesce(e.delete_yn, 'N') = 'N'
         where a.vessel_no = @vesselNo
           and a.use_yn = 'Y'
           and d.stock_qty > 0;`,

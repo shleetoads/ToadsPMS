@@ -15,7 +15,8 @@ export async function GET(req: Request) {
             , warehouse_location
          from warehouse
         where vessel_no = @vesselNo
-          and use_yn = 'Y'`, 
+          and use_yn = 'Y'
+          and coalesce(delete_yn, 'N') = 'N'`,
       [
         { name: 'vesselNo', value: vesselNo}
       ]);

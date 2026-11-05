@@ -8,15 +8,27 @@ export async function POST(req: Request) {
     const body = await req.json();
     const item : Warehouse = body;
 
+    // 실제 삭제 대신 소프트 삭제: delete_yn='Y'로 숨김 처리(데이터는 보존, 동기화로 전파).
+    const params = [
+      { name: 'vesselNo', value: item.vessel_no },
+      { name: 'warehouseNo', value: item.warehouse_no },
+    ];
+    let modifyUserSet = '';
+    if (item.modify_user !== undefined && item.modify_user !== null && String(item.modify_user) !== '') {
+      modifyUserSet = `
+            , modify_user = @modifyUser`;
+      params.push({ name: 'modifyUser', value: item.modify_user });
+    }
+
     // DB에서 사용자 정보 확인
     const count = await execute(
-      `delete from warehouse
+      `update warehouse
+          set delete_yn = 'Y'
+            , modify_date = now()::timestamp${modifyUserSet}
         where vessel_no = @vesselNo
-          and warehouse_no = @warehouseNo;`,
-      [
-        { name: 'vesselNo', value: item.vessel_no },
-        { name: 'warehouseNo', value: item.warehouse_no },
-      ]
+          and warehouse_no = @warehouseNo
+          and coalesce(delete_yn, 'N') = 'N';`,
+      params
     );
 
     if (count === 0) {
